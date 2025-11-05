@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${default}",
+                "/home/cengo/ros_ws/src/backend/third-party/open62541/include/**",
+                "/home/cengo/ros_ws/src/backend/third-party/yaml-cpp/include/**",
+                "/home/cengo/ros_ws/src/backend/include/**",
+                "/home/cengo/ros_ws/install/backend/include/**",
+                "/opt/ros/jazzy/include/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
