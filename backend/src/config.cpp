@@ -8,6 +8,7 @@ UaConfig ConfigLoader::load_file(const std::string& yaml_path){
     YAML::Node root = YAML::LoadFile(yaml_path);
 
     cfg.endpoint = root["endpoint"].as<std::string>();
+    cfg.ns_index = root["namespace_index"].as<int>();
     cfg.nodes.speed    = root["nodes"]["speed"].as<std::string>();
     cfg.nodes.mode     = root["nodes"]["mode"].as<std::string>();
     cfg.nodes.command  = root["nodes"]["command"].as<std::string>();

@@ -38,90 +38,126 @@ static void handler_bool(UA_Client* client,
 bool UaClient::connect(const UaConfig& conf){
 
     cfg_ = conf;
+
+    std::lock_guard<std::mutex> lk(ua_mtx_);
     client_ = UA_Client_new();
     UA_ClientConfig_setDefault(UA_Client_getConfig(client_));
     UA_StatusCode status = UA_Client_connect(client_, cfg_.endpoint.c_str());
-    return status == UA_STATUSCODE_GOOD;
+
+    if(status == UA_STATUSCODE_GOOD){
+        connected_ = true;
+        return true;
+    }
+
+    UA_Client_delete(client_);
+    client_ = nullptr;
+    connected_ = false;
+    return false;
 
 }
 
 void UaClient::disconnect(){
-  if (client_)
-    {
-        UA_Client_disconnect(client_);
-        UA_Client_delete(client_);
-        client_ = nullptr;
-    }
+  std::lock_guard<std::mutex> lk(ua_mtx_);
+ 
+  if(!client_){connected_ = false; return;}
+  
+  {
+    std::lock_guard<std::mutex> lk2(sub_mtx_);
+    int_cbs_.clear();
+    bool_cbs_.clear();
+    subs_int_.clear();
+    subs_bool_.clear();
+  }
+    UA_Client_disconnect(client_);
+    UA_Client_delete(client_);
+    client_ = nullptr;
+    connected_ = false;
 }
 
-
-bool UaClient::try_connect(){
-    client_ = UA_Client_new();
-    UA_ClientConfig_setDefault(UA_Client_getConfig(client_));
-    UA_StatusCode rc = UA_Client_connect(client_,cfg_.endpoint.c_str());
-    if(rc != UA_STATUSCODE_GOOD){
-        UA_Client_delete(client_);
-        client_ = nullptr;
-        return false;
-    }
-    return true;
-}
 
 void UaClient::start(){
-    running_ = true;
-    worker_ = std::thread(&UaClient::worker_loop, this);
-}
+  if(running_) return;
+  running_ = true;
+  worker_ = std::thread(&UaClient::worker_loop, this);}
 
 void UaClient::stop(){
-    running_ = false;
-    if(worker_.joinable()) worker_.join();
+  if(!running_) return;
+  running_ = false;
+  if(worker_.joinable()) worker_.join();
+}
+
+
+bool UaClient::try_connect_once(){
+    std::lock_guard<std::mutex> lk(ua_mtx_);
+    if(client_){UA_Client_disconnect(client_);
+    UA_Client_delete(client_);
+    client_ = nullptr;
+    }
+    client_ = UA_Client_new();
+    UA_ClientConfig_setDefault(UA_Client_getConfig(client_));
+    UA_StatusCode st = UA_Client_connect(client_,cfg_.endpoint.c_str());
+    if(st == UA_STATUSCODE_GOOD){
+        connected_ = true;
+        return true;
+    }
+
+    UA_Client_delete(client_);
+    client_ = nullptr;
+    connected_ = false;
+    return false;
+}
+
+void UaClient::rebind_all(){
+
+  std::vector<IntSub>  ints;
+  std::vector<BoolSub> bools;
+  {
+    std::lock_guard<std::mutex> lk(sub_mtx_);
+    ints  = subs_int_;
+    bools = subs_bool_;
+
+    int_cbs_.clear(); bool_cbs_.clear();
+    subs_int_.clear(); subs_bool_.clear();
+  }
+
+  for(auto& s : ints)  subscribe_int16(s.node, s.cb);
+  for(auto& s : bools) subscribe_bool (s.node, s.cb);
 }
 
 void UaClient::worker_loop(){
+
     int backoff = cfg_.timing.rc.initial_ms;
-    while(running_){
-        if(!connected_){
-             if(try_connect()) {
-            connected_ = true;
-            rebind_all();
-            backoff = cfg_.timing.rc.initial_ms;
-        }else{
-            std::this_thread::sleep_for(std::chrono::milliseconds(backoff));
-            backoff = std::min(int(backoff * cfg_.timing.rc.multiplier),cfg_.timing.rc.max_ms);
-            continue;
-        }
-    }
+    const int backoff_max = cfg_.timing.rc.max_ms;
+    const double mul = cfg_.timing.rc.multiplier;
 
-    UA_StatusCode rc = UA_Client_run_iterate(client_,50);
-    if(rc!= UA_STATUSCODE_GOOD){
-        connected_ = false;
-        UA_Client_disconnect(client_);
-      }
-    }
-}
-
-
-void UaClient::rebind_all(){
-    std::vector<IntSub> int_subs_copy;
-    std::vector<BoolSub> bool_subs_copy;
-    
+    while (running_)
     {
-        std::lock_guard<std::mutex> lk(sub_mtx_);
-        int_subs_copy = subs_int_;
-        bool_subs_copy = subs_bool_;
-        // Eski callback'leri temizle
-        int_cbs_.clear();
-        bool_cbs_.clear();
-        subs_int_.clear();
-        subs_bool_.clear();
-    }
-    
-    for(const auto& sub : int_subs_copy){
-        subscribe_int16(sub.node, sub.cb);
-    }
+        if(!connected_)
+        {
+            if(try_connect_once()){
+                rebind_all();
+                backoff = cfg_.timing.rc.initial_ms;
+            }else{
+                std::this_thread::sleep_for(std::chrono::milliseconds(backoff));
+                backoff = std::min(static_cast<int>(backoff* mul), backoff_max);
+                continue;
+            }
+        }
 
-    for(const auto& sub : bool_subs_copy){
-        subscribe_bool(sub.node, sub.cb);
+        {
+            std::lock_guard<std::mutex> lk(ua_mtx_);
+            if(client_){
+                UA_StatusCode rc = UA_Client_run_iterate(client_,50);
+                if(rc != UA_STATUSCODE_GOOD){
+                    connected_ = false;
+                }
+
+            }else{
+                connected_ = false;
+            }
+        }
+
+
     }
 
 }
@@ -136,8 +172,14 @@ bool UaClient::write_int16(const std::string& node_str, int16_t value){
      
     UA_StatusCode rc = UA_Client_writeValueAttribute(client_, id, &var);
     UA_Variant_clear(&var);
+    
+    if(rc != UA_STATUSCODE_GOOD) {
+        std::cerr << "  Write error code: 0x" << std::hex << rc << std::dec << std::endl;
+    }
+    
     return rc == UA_STATUSCODE_GOOD;
 }
+
 
 
 bool UaClient::write_bool(const std::string& node_str, bool value){

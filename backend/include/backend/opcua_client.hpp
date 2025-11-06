@@ -24,6 +24,8 @@ public:
   void disconnect();
   bool is_connected() const { return connected_; }
 
+  void start();   
+  void stop();
 
   bool write_int16(const std::string& node_str, int16_t value);
   bool write_bool (const std::string& node_str, bool value);
@@ -37,28 +39,23 @@ public:
   bool subscribe_bool (const std::string& node_str, BoolCb cb);
 
 
-  void start(); 
-  void stop();  
-
   std::mutex sub_mtx_;
   std::unordered_map<UA_UInt32, IntCb>  int_cbs_;
   std::unordered_map<UA_UInt32, BoolCb> bool_cbs_;
+
 private:
   
   void worker_loop();
-  bool try_connect();
+  bool try_connect_once();
   void rebind_all();
 
-  
+  std::mutex ua_mtx_;
   UA_Client* client_{nullptr};
   UaConfig   cfg_;
 
   std::thread worker_;
   std::atomic<bool> running_{false};
   std::atomic<bool> connected_{false};
-
-
-
 
   struct IntSub {
     std::string node;

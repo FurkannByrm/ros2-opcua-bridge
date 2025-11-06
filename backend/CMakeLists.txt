@@ -20,8 +20,8 @@ find_package(rclcpp REQUIRED)
 include_directories(include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/build/src_generated)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/plugins/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/yaml-cpp/include)
-
 
 set(UA_ENABLE_HISTORIZING OFF CACHE BOOL "Disable historizing")
 set(UA_ENABLE_DISCOVERY OFF CACHE BOOL "Disable discovery")
@@ -30,6 +30,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/yaml-cpp yaml-cpp)
 
 
 add_executable(main src/main.cpp
+                    src/opcua_client.cpp
                     src/config.cpp)
 
 
