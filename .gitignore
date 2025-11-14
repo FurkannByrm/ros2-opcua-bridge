@@ -1,3 +1,4 @@
 .vscode/settings.json
 backend/third-party/open62541
 .gitignore
+.vscode/c_cpp_properties.json

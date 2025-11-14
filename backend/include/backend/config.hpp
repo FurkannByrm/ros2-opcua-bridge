@@ -24,7 +24,7 @@ struct NodesCfg {
 };
 
 struct StructsCfg{
-    std::string mod_root, stat_root;
+    std::string mod_root, stat_root, sensing_root, cleaning_root;
     bool discover;
     std::vector<std::string> mod_fields;
     std::vector<std::string> stat_fields;

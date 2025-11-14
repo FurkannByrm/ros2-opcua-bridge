@@ -14,6 +14,8 @@ UaConfig ConfigLoader::load_file(const std::string& yaml_path){
     cfg.nodes.command  = root["nodes"]["command"].as<std::string>();
     cfg.structs.mod_root = root["structs"]["mod_root"].as<std::string>();
     cfg.structs.stat_root = root["structs"]["stat_root"].as<std::string>();
+    cfg.structs.sensing_root = root["structs"]["sensing_root"].as<std::string>();
+    cfg.structs.cleaning_root = root["structs"]["cleaning_root"].as<std::string>();
     cfg.structs.discover = root["structs"]["discover"].as<bool>();
     
     cfg.timing.rc.initial_ms = root["timing"]["reconnect"]["initial_ms"].as<int>();

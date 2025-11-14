@@ -7,8 +7,8 @@
   <maintainer email="frknbyrm05@gmail.com">cengo</maintainer>
   <license>TODO: License declaration</license>
 
+  <depend>backend</depend>
   <buildtool_depend>ament_cmake</buildtool_depend>
-
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

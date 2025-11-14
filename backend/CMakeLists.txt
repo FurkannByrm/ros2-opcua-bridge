@@ -11,10 +11,17 @@ endif()
 
 
 find_package(Threads REQUIRED)
-
-
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/SetInt16.srv"
+  DEPENDENCIES std_msgs
+)
 
 
 include_directories(include)
@@ -29,11 +36,19 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541 open62541)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/yaml-cpp yaml-cpp)
 
 
-add_executable(main src/main.cpp
+add_executable(test_server test/test_server.cpp)
+add_executable(main src/main_with_ros.cpp
                     src/opcua_client.cpp
-                    src/config.cpp)
+                    src/config.cpp
+                    src/ros_bridge.cpp
+              )
 
-
+target_link_libraries(test_server
+  open62541-object
+  open62541-plugins
+  Threads::Threads
+  m
+)
 target_link_libraries(main 
   yaml-cpp
   open62541-object
@@ -42,20 +57,31 @@ target_link_libraries(main
   m
 )
 
-
 ament_target_dependencies(main 
   rclcpp
+  std_msgs
+  std_srvs
 )
 
 
-install(TARGETS main
+
+rosidl_target_interfaces(main
+${PROJECT_NAME} "rosidl_typesupport_cpp")
+
+
+install(TARGETS test_server
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS main
+DESTINATION lib/${PROJECT_NAME}
 )
 
 # Install config files
 install(DIRECTORY config/
-  DESTINATION share/${PROJECT_NAME}/config
+DESTINATION share/${PROJECT_NAME}/config
 )
 
-# Package configuration
+ament_export_dependencies(rosidl_default_runtime)
+
 ament_package()
