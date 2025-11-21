@@ -18,7 +18,6 @@
 
 // }
 
-inline std::string make_child_node(const std::string& root, const std::string& field){
-
-    return root + ".\"" + field + "\"";
+inline std::string make_child_node(const std::string &root, const std::string &field) {
+  return root + ".\"" + field + "\"";
 }

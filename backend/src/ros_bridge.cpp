@@ -53,7 +53,7 @@ ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "robothome_safetr
     msg.data = v;
     pub_sensing_robot_home_st_->publish(msg);
   });
-  ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "sensing-finished"), [this](bool v){
+  ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "sensing-finised"), [this](bool v){
     std_msgs::msg::Bool msg; 
     msg.data = v;
     pub_sensing_finished_->publish(msg);
@@ -73,7 +73,7 @@ ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "robothome_safetr
     msg.data = v;
     pub_touch_sensing_active_->publish(msg);
   });
-  ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "slide_command"), [this](bool v){
+  ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "slide command"), [this](bool v){
     std_msgs::msg::Bool msg; 
     msg.data = v;
     pub_sensing_slide_command_->publish(msg);
@@ -102,7 +102,7 @@ ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "robothome_safetr
     msg.data = v;
     pub_cleaning_active_->publish(msg);
   });
-  ua_->subscribe_bool(make_child_node(cfg_.structs.cleaning_root, "slide_command"), [this](bool v){
+  ua_->subscribe_bool(make_child_node(cfg_.structs.cleaning_root, "slide command"), [this](bool v){
     std_msgs::msg::Bool msg; 
     msg.data = v;
     pub_cleaning_slide_command_->publish(msg);
@@ -143,7 +143,7 @@ void RosBridge::setup_services(){
     "/ros2_comm/sensing/finished_set",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
-        ua_->enqueue_write_bool(make_child_node(cfg_.structs.sensing_root, "sensing-finished"), req->data);
+        ua_->enqueue_write_bool(make_child_node(cfg_.structs.sensing_root, "sensing-finised"), req->data);
         res->success = true;
         res->message = std::string("sensing-finished set to ") + (req->data ? "true" : "false");
       });
@@ -182,7 +182,7 @@ void RosBridge::setup_services(){
     "/ros2_comm/sensing/slide_command_set",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
-        ua_->enqueue_write_bool(make_child_node(cfg_.structs.sensing_root, "slide_command"), req->data);
+        ua_->enqueue_write_bool(make_child_node(cfg_.structs.sensing_root, "slide command"), req->data);
         res->success = true;
         res->message = std::string("slide_command set to ") + (req->data ? "true" : "false");
       });
@@ -232,7 +232,7 @@ void RosBridge::setup_services(){
     "/ros2_comm/cleaning/slide_command_set",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
-        ua_->enqueue_write_bool(make_child_node(cfg_.structs.cleaning_root, "slide_command"), req->data);
+        ua_->enqueue_write_bool(make_child_node(cfg_.structs.cleaning_root, "slide command"), req->data);
         res->success = true;
         res->message = std::string("slide_command set to ") + (req->data ? "true" : "false");
       });

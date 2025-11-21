@@ -16,8 +16,9 @@ void signal_handler(int) {
 int main() {
     std::signal(SIGINT, signal_handler);
 
-    UaConfig cfg = ConfigLoader::load_file("/home/cengo/ros_ws/src/backend/config/opcua.yaml");
+    UaConfig cfg = ConfigLoader::load_file("/home/plot/ros2-opcua-bridge/src/backend/config/opcua.yaml");
     std::cout << "[INFO] Loaded config. Endpoint: " << cfg.endpoint << std::endl;
+
 
     UaClient ua;
     if (!ua.connect(cfg)) {
@@ -25,6 +26,7 @@ int main() {
         return 1;
     }
     ua.start();
+
 
     for (int i = 0; i < 50 && !ua.is_connected(); ++i)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -37,11 +39,10 @@ int main() {
 
     std::cout << "[INFO] Connected successfully to OPC UA Server" << std::endl;
 
-
+    
     ua.subscribe_int16(cfg.nodes.speed, [](int16_t v) {
         std::cout << "[SUB] SPEED updated: " << v << std::endl;
     });
-
     ua.subscribe_bool(make_child_node(cfg.structs.stat_root, "SYSTEM_READY"), [](bool v) {
         std::cout << "[SUB] STAT.SYSTEM_READY = " << std::boolalpha << v << std::endl;
     });
@@ -50,7 +51,7 @@ int main() {
         std::cout << "[SUB] MOD.COBOT = " << std::boolalpha << v << std::endl;
     });
 
-
+    // test
     std::this_thread::sleep_for(std::chrono::seconds(1));
     ua.enqueue_write_int16(cfg.nodes.speed, 1200);
     std::cout << "[CMD] SPEED -> 1200" << std::endl;
@@ -63,12 +64,13 @@ int main() {
     ua.enqueue_write_bool(make_child_node(cfg.structs.mod_root, "COBOT"), false);
     std::cout << "[CMD] MOD.COBOT -> FALSE" << std::endl;
 
-
+    // main loop
     std::cout << "\n[INFO] Running... Press Ctrl+C to exit\n";
     while (g_running) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
+    // shutdown
     std::cout << "[INFO] Stopping UaClient..." << std::endl;
     ua.stop();
     ua.disconnect();
