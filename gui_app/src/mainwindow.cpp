@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   auto *headerLayout = new QVBoxLayout(headerFrame);
   
   auto *logoLabel = new QLabel(headerFrame);
-  QPixmap logo("/home/cengo/ros_ws/src/gui_app/png/magician_logo_full.png");
+  QPixmap logo("/home/cengo/ros_ws/src/gui_app/png/magician_logo_full.png"); // -->  CHANGE IT !!
   if (!logo.isNull()) {
     logoLabel->setPixmap(logo.scaledToHeight(150, Qt::SmoothTransformation));
     logoLabel->setAlignment(Qt::AlignCenter);

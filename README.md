@@ -24,7 +24,7 @@ This workspace contains two main packages:
 - **Multi-threaded**: Asynchronous command queue with mutex-protected operations
 - **Configurable**: YAML-based configuration system
 
-## 📦 Prerequisites
+## Prerequisites
 
 ### System Requirements
 - Ubuntu 22.04+ (ROS2 Foxy/Humble)
@@ -260,3 +260,10 @@ gui_app/
 └── png/
     └── magician_logo_full.png  # Logo asset
 ```
+
+Important Configuration Notes
+
+The GUI application uses a hardcoded logo path that must be updated for your system:
+
+ File: mainwindow.cpp (Line ~30)
+
