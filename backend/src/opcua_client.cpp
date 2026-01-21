@@ -1,24 +1,31 @@
 #include "backend/opcua_client.hpp"
 
 
-static void handler_int(UA_Client*, UA_UInt32, void* subContext,
-                        UA_UInt32 monId, void*, UA_DataValue* value) {
-  auto self = static_cast<UaClient*>(subContext);
-  if(!value || !value->hasValue || value->value.type != &UA_TYPES[UA_TYPES_INT16]) return;
-  const int16_t v = *static_cast<int16_t*>(value->value.data);
-  std::lock_guard<std::mutex> lk(self->sub_mtx_);
-  auto it = self->int_cbs_.find(monId);
-  if(it != self->int_cbs_.end() && it->second) it->second(v);
-}
 
-static void handler_bool(UA_Client*, UA_UInt32, void* subContext,
-                         UA_UInt32 monId, void*, UA_DataValue* value) {
-  auto self = static_cast<UaClient*>(subContext);
-  if(!value || !value->hasValue || value->value.type != &UA_TYPES[UA_TYPES_BOOLEAN]) return;
-  const bool v = *static_cast<UA_Boolean*>(value->value.data) != 0;
-  std::lock_guard<std::mutex> lk(self->sub_mtx_);
-  auto it = self->bool_cbs_.find(monId);
-  if(it != self->bool_cbs_.end() && it->second) it->second(v);
+namespace {
+
+   void handler_int(UA_Client*, UA_UInt32, void* subContext,
+                          UA_UInt32 monId, void*, UA_DataValue* value) {
+    auto self = static_cast<UaClient*>(subContext);
+    if(!value || !value->hasValue || value->value.type != &UA_TYPES[UA_TYPES_INT16]) return;
+    const int16_t v = *static_cast<int16_t*>(value->value.data);
+    std::lock_guard<std::mutex> lk(self->sub_mtx_);
+    auto it = self->int_cbs_.find(monId);
+    if(it != self->int_cbs_.end() && it->second) it->second(v);
+  }
+  
+  void handler_bool(UA_Client*, UA_UInt32, void* subContext,
+                           UA_UInt32 monId, void*, UA_DataValue* value) {
+    auto self = static_cast<UaClient*>(subContext);
+    if(!value || !value->hasValue || value->value.type != &UA_TYPES[UA_TYPES_BOOLEAN]) return;
+    const bool v = *static_cast<UA_Boolean*>(value->value.data) != 0;
+    std::lock_guard<std::mutex> lk(self->sub_mtx_);
+    auto it = self->bool_cbs_.find(monId);
+    if(it != self->bool_cbs_.end() && it->second) it->second(v);
+  }
+  
+
+  
 }
 
 bool UaClient::connect(const UaConfig& conf) {

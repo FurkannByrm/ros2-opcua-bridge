@@ -165,7 +165,7 @@ The `mainwindow.cpp` provides:
 - Service call feedback
 - Responsive scroll area for all controls
 
-## 🔍 Key Implementation Details
+## Key Implementation Details
 
 ### Backend Architecture
 

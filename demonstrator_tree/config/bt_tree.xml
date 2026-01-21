@@ -1,0 +1,11 @@
+<root BTCPP_format="4" >
+ <BehaviorTree ID="MainTree">
+    <Sequence name="magician_sequence">
+     <Fallback>
+        <IsRobotAtHome   name="check_home_pos"/>
+        <CallHoming   name="call_homing_service"/>
+    </Fallback>
+    <CallOpcUI   name="call_opcua_service"/>
+    </Sequence>
+ </BehaviorTree>
+</root>
