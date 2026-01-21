@@ -5,7 +5,7 @@
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
 
-  UaConfig cfg = ConfigLoader::load_file("/home/plot/ros2-opcua-bridge/src/backend/config/opcua.yaml"); //-->  CHANGE IT !!
+  UaConfig cfg = ConfigLoader::load_file("/home/cengo/ros_ws/src/backend/config/opcua.yaml"); //-->  CHANGE IT !!
 
   auto node = std::make_shared<RosBridge>(cfg);
   rclcpp::executors::MultiThreadedExecutor exec;

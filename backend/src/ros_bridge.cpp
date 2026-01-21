@@ -201,7 +201,7 @@ void RosBridge::setup_services(){
   //cleaning service
 
   srv_cleaning_robot_home_st_set_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/cleaning/cobot_set",
+    "/ros2_comm/cleaning/safetransfer_set",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
         ua_->enqueue_write_bool(make_child_node(cfg_.structs.cleaning_root, "robothome_safetransfer"), req->data);

@@ -9,6 +9,7 @@
                 "/home/cengo/ros_ws/src/backend/include/**",
                 "/home/cengo/ros_ws/install/backend/include/**",
                 "/home/cengo/ros_ws/src/gui_app/include/**",
+                "/home/cengo/ros_ws/src/demonstrator_tree/include/**",
                 "/opt/ros/jazzy/include/**",
                 "/usr/include/x86_64-linux-gnu/qt6/**"
             ],

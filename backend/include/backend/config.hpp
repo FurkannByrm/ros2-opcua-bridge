@@ -46,41 +46,6 @@ class ConfigLoader{
 
 
 };
-// namespace YAML_parser {
-    
-//     struct Config{
-    
-//         std::string endpoint;
-//         std::unordered_map<std::string, std::string> nodes;
-//         std::unordered_map<std::string, std::string> mod_root;
-//         int namespaceIndex{0};
-//     };
-    
-//     class Parser{
-    
-//         public:
-
-//         Parser();
-//         void parse();
-
-//         void getConfig()const{
-//         std::cout<<"Endpoint : "<<conf_.endpoint<<"\n";
-//         std::cout<<"NamespaceIndex : "<<conf_.namespaceIndex<<"\n";
-//         for(const auto& [node, value] : conf_.nodes){
-//         std::cout<<"[Node] : "<<node<<" [value] : "<<value<<"\n";
-//         }
-//     }
-
-//         private:
-
-//         Config conf_;
-//         YAML::Node node_;
-//         const std::string& path_;
-// };
-
-// }
-
-
 
 
 

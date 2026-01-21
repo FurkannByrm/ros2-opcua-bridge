@@ -1,5 +1,5 @@
-endpoint: "opc.tcp://192.168.1.1:4840"
-# endpoint: "opc.tcp://localhost:4840" 
+# endpoint: "opc.tcp://192.168.1.1:4840"
+endpoint: "opc.tcp://localhost:4840" 
 namespace_index: 3
 
 nodes:

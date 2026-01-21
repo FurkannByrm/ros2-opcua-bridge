@@ -259,7 +259,7 @@ void MainWindow::setup_ros() {
   cli_sensing_slide_command_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/slide_command_set");
   cli_sensing_running_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/running");
   
-  cli_cleaning_safetransfer_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/cobot_set");
+  cli_cleaning_safetransfer_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/safetransfer_set");
   cli_cleaning_finished_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/cleaning_finished_set");
   cli_cleaning_active_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/cleaning_active_set");
   cli_cleaning_slide_command_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/slide_command_set");
