@@ -19,7 +19,9 @@
 #include <deque>
 
 class UaClient {
-public:
+
+  public:
+  
   UaClient() = default;
   ~UaClient() = default;
 
@@ -32,33 +34,43 @@ public:
 
   void enqueue_write_bool (const std::string& node, bool v);
   void enqueue_write_int16(const std::string& node, int16_t v);
+  void enqueue_write_double(const std::string& node, double v);
+
+
 
   using IntCb  = std::function<void(int16_t)>;
   using BoolCb = std::function<void(bool)>;
+  using DoubleCb= std::function<void(double)>;
 
   void subscribe_int16(const std::string& node, IntCb cb);
   void subscribe_bool (const std::string& node, BoolCb cb);
-
+  void subscribe_double(const std::string& node, DoubleCb cb);
 
   std::mutex sub_mtx_;
   std::unordered_map<UA_UInt32, IntCb>  int_cbs_;
   std::unordered_map<UA_UInt32, BoolCb> bool_cbs_;
+  std::unordered_map<UA_UInt32, DoubleCb> double_cbs_;
 
 private:
+
   void worker_loop();
   bool try_connect_once();
   void rebind_all();
 
   bool write_int16_worker(const std::string& node_str, int16_t value);
   bool write_bool_worker (const std::string& node_str, bool value);
+  bool write_double_worker(const std::string& node_str, double value);
+
   bool sub_int16_worker  (const std::string& node_str, IntCb cb);
   bool sub_bool_worker   (const std::string& node_str, BoolCb cb);
+  bool sub_double_worker (const std::string& node_str, DoubleCb cb);
 
   struct UaCommand {
-    enum class Type { WriteBool, WriteInt16, SubBool, SubInt16, Stop } type;
+    enum class Type { WriteBool, WriteInt16, WriteDouble, SubBool, SubInt16, SubDouble, Stop } type;
     std::string node;
     bool bval{false};
     int16_t ival{0};
+    double dval{0.0};
     std::shared_ptr<std::promise<UA_StatusCode>> prom;
   };
   std::deque<UaCommand> cmd_q_;
@@ -85,11 +97,21 @@ private:
     UA_UInt32   mid;
     BoolCb      cb;
   };
+  struct DoubleSub{
+    std::string node;
+    UA_UInt32   sid;
+    UA_UInt32   mid;
+    DoubleCb    cb;
+  };
+
 
   std::vector<IntSub>  desired_subs_int_;
   std::vector<BoolSub> desired_subs_bool_;
+  std::vector<DoubleSub> desired_subs_double_;
+  
   std::vector<IntSub>  subs_int_;
   std::vector<BoolSub> subs_bool_;
+  std::vector<DoubleSub> subs_double_;
 };
 
 #endif // UA_CLIENT_HPP

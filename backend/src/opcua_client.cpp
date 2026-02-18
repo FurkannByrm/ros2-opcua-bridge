@@ -24,7 +24,15 @@ namespace {
     if(it != self->bool_cbs_.end() && it->second) it->second(v);
   }
   
-
+void handler_double(UA_Client*, UA_UInt32, void* subContext,
+                          UA_UInt32 monId, void*, UA_DataValue* value) {
+    auto self = static_cast<UaClient*>(subContext);
+    if(!value || !value->hasValue || value->value.type != &UA_TYPES[UA_TYPES_DOUBLE]) return;
+    const double v = *static_cast<double*>(value->value.data);
+    std::lock_guard<std::mutex> lk(self->sub_mtx_);
+    auto it = self->double_cbs_.find(monId);
+    if(it != self->double_cbs_.end() && it->second) it->second(v);
+  }
   
 }
 
@@ -60,7 +68,7 @@ void UaClient::stop() {
   if(!running_) return;
   {
     std::lock_guard<std::mutex> lk(cmd_mtx_);
-    cmd_q_.push_front({UaCommand::Type::Stop, "", false, 0, nullptr});
+    cmd_q_.push_front({UaCommand::Type::Stop, "", false, 0, 0.0, nullptr});
   }
   cmd_cv_.notify_one();
   if(worker_.joinable()) worker_.join();
@@ -117,6 +125,7 @@ void UaClient::worker_loop() {
       switch(cmd.type) {
         case UaCommand::Type::WriteBool:  write_bool_worker(cmd.node, cmd.bval); break;
         case UaCommand::Type::WriteInt16: write_int16_worker(cmd.node, cmd.ival); break;
+        case UaCommand::Type::WriteDouble: write_double_worker(cmd.node,cmd.dval); break;
         case UaCommand::Type::SubBool:
           for(auto& s : desired_subs_bool_)
             if(s.node == cmd.node) sub_bool_worker(cmd.node, s.cb);
@@ -125,7 +134,11 @@ void UaClient::worker_loop() {
           for(auto& s : desired_subs_int_)
             if(s.node == cmd.node) sub_int16_worker(cmd.node, s.cb);
           break;
-        default: break;
+          case UaCommand::Type::SubDouble:
+          for(auto& s : desired_subs_double_)
+          if(s.node == cmd.node) sub_double_worker(cmd.node, s.cb);
+          break;
+          default: break;
       }
       if(cmd.prom) cmd.prom->set_value(UA_STATUSCODE_GOOD);
     }
@@ -153,14 +166,21 @@ void UaClient::worker_loop() {
 void UaClient::enqueue_write_bool(const std::string& node, bool v) {
   std::lock_guard<std::mutex> lk(cmd_mtx_);
   if(cmd_q_.size() >= cmd_q_max_) cmd_q_.pop_front();
-  cmd_q_.push_back({UaCommand::Type::WriteBool, node, v, 0, nullptr});
+  cmd_q_.push_back({UaCommand::Type::WriteBool, node, v, 0, 0.0, nullptr});
   cmd_cv_.notify_one();
 }
 
 void UaClient::enqueue_write_int16(const std::string& node, int16_t v) {
   std::lock_guard<std::mutex> lk(cmd_mtx_);
   if(cmd_q_.size() >= cmd_q_max_) cmd_q_.pop_front();
-  cmd_q_.push_back({UaCommand::Type::WriteInt16, node, false, v, nullptr});
+  cmd_q_.push_back({UaCommand::Type::WriteInt16, node, false, v, 0.0, nullptr});
+  cmd_cv_.notify_one();
+}
+
+void UaClient::enqueue_write_double(const std::string& node, double v) {
+  std::lock_guard<std::mutex> lk(cmd_mtx_);
+  if(cmd_q_.size() >= cmd_q_max_) cmd_q_.pop_front();
+  cmd_q_.push_back({UaCommand::Type::WriteDouble, node, false, 0, v, nullptr});
   cmd_cv_.notify_one();
 }
 
@@ -170,7 +190,7 @@ void UaClient::subscribe_bool(const std::string& node, BoolCb cb) {
     desired_subs_bool_.push_back({node, 0, 0, cb});
   }
   std::lock_guard<std::mutex> lk(cmd_mtx_);
-  cmd_q_.push_back({UaCommand::Type::SubBool, node, false, 0, nullptr});
+  cmd_q_.push_back({UaCommand::Type::SubBool, node, false, 0, 0.0, nullptr});
   cmd_cv_.notify_one();
 }
 
@@ -180,9 +200,20 @@ void UaClient::subscribe_int16(const std::string& node, IntCb cb) {
     desired_subs_int_.push_back({node, 0, 0, cb});
   }
   std::lock_guard<std::mutex> lk(cmd_mtx_);
-  cmd_q_.push_back({UaCommand::Type::SubInt16, node, false, 0, nullptr});
+  cmd_q_.push_back({UaCommand::Type::SubInt16, node, false, 0, 0.0, nullptr});
   cmd_cv_.notify_one();
 }
+
+void UaClient::subscribe_double(const std::string& node, DoubleCb cb) {
+  {
+    std::lock_guard<std::mutex> lk(sub_mtx_);
+    desired_subs_double_.push_back({node, 0, 0, cb});
+  }
+  std::lock_guard<std::mutex> lk(cmd_mtx_);
+  cmd_q_.push_back({UaCommand::Type::SubDouble, node, false, 0, 0.0, nullptr});
+  cmd_cv_.notify_one();
+}
+
 
 //Worker Helpers
 bool UaClient::write_int16_worker(const std::string& node_str, int16_t value) {
@@ -191,6 +222,17 @@ bool UaClient::write_int16_worker(const std::string& node_str, int16_t value) {
   UA_Variant var;
   UA_Variant_init(&var);
   UA_Variant_setScalarCopy(&var, &value, &UA_TYPES[UA_TYPES_INT16]);
+  UA_StatusCode rc = UA_Client_writeValueAttribute(client_, id, &var);
+  UA_Variant_clear(&var);
+  return rc == UA_STATUSCODE_GOOD;
+}
+
+bool UaClient::write_double_worker(const std::string& node_str, double value) {
+  if(!client_) return false;
+  UA_NodeId id = UA_NODEID_STRING(cfg_.ns_index, const_cast<char*>(node_str.c_str()));
+  UA_Variant var;
+  UA_Variant_init(&var);
+  UA_Variant_setScalarCopy(&var, &value, &UA_TYPES[UA_TYPES_DOUBLE]);
   UA_StatusCode rc = UA_Client_writeValueAttribute(client_, id, &var);
   UA_Variant_clear(&var);
   return rc == UA_STATUSCODE_GOOD;
@@ -208,41 +250,43 @@ bool UaClient::write_bool_worker(const std::string& node_str, bool value) {
   return rc == UA_STATUSCODE_GOOD;
 }
 
-// bool UaClient::sub_bool_worker(const std::string& node_str, BoolCb cb) {
-//   if(!client_) return false;
-//   UA_NodeId id = UA_NODEID_STRING(cfg_.ns_index, const_cast<char*>(node_str.c_str()));
-//   UA_CreateSubscriptionRequest sreq = UA_CreateSubscriptionRequest_default();
-//   sreq.requestedPublishingInterval = cfg_.timing.sampling_ms;
-//   UA_CreateSubscriptionResponse sres = UA_Client_Subscriptions_create(client_, sreq, this, nullptr, nullptr);
-//   if(sres.responseHeader.serviceResult != UA_STATUSCODE_GOOD) return false;
-//   UA_MonitoredItemCreateRequest mreq = UA_MonitoredItemCreateRequest_default(id);
-//   UA_MonitoredItemCreateResult mres = UA_Client_MonitoredItems_createDataChange(
-//       client_, sres.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH, mreq,
-//       this, handler_bool, nullptr);
-//   if(mres.statusCode != UA_STATUSCODE_GOOD) return false;
-//   std::lock_guard<std::mutex> lk(sub_mtx_);
-//   bool_cbs_[mres.monitoredItemId] = cb;
-//   subs_bool_.push_back({node_str, sres.subscriptionId, mres.monitoredItemId, cb});
-//   return true;
-// }
-
-// bool UaClient::sub_int16_worker(const std::string& node_str, IntCb cb) {
-//   if(!client_) return false;
-//   UA_NodeId id = UA_NODEID_STRING(cfg_.ns_index, const_cast<char*>(node_str.c_str()));
-//   UA_CreateSubscriptionRequest sreq = UA_CreateSubscriptionRequest_default();
-//   sreq.requestedPublishingInterval = cfg_.timing.sampling_ms;
-//   UA_CreateSubscriptionResponse sres = UA_Client_Subscriptions_create(client_, sreq, this, nullptr, nullptr);
-//   if(sres.responseHeader.serviceResult != UA_STATUSCODE_GOOD) return false;
-//   UA_MonitoredItemCreateRequest mreq = UA_MonitoredItemCreateRequest_default(id);
-//   UA_MonitoredItemCreateResult mres = UA_Client_MonitoredItems_createDataChange(
-//       client_, sres.subscriptionId, UA_TIMESTAMPSTORETURN_BOTH, mreq,
-//       this, handler_int, nullptr);
-//   if(mres.statusCode != UA_STATUSCODE_GOOD) return false;
-//   std::lock_guard<std::mutex> lk(sub_mtx_);
-//   int_cbs_[mres.monitoredItemId] = cb;
-//   subs_int_.push_back({node_str, sres.subscriptionId, mres.monitoredItemId, cb});
-//   return true;
-// }
+bool UaClient::sub_double_worker(const std::string& node_str, DoubleCb cb) {
+  if(!client_) return false;
+  
+  {
+    std::lock_guard<std::mutex> lk(sub_mtx_);
+    for(const auto& sub : subs_double_) {
+      if(sub.node == node_str) {
+        return true;  
+      }
+    }
+  }
+  
+  static UA_UInt32 shared_double_subscription_id = 0;
+  
+  if (shared_double_subscription_id == 0) {
+    UA_CreateSubscriptionRequest sreq = UA_CreateSubscriptionRequest_default();
+    sreq.requestedPublishingInterval = cfg_.timing.sampling_ms;
+    UA_CreateSubscriptionResponse sres = UA_Client_Subscriptions_create(client_, sreq, this, nullptr, nullptr);
+    if(sres.responseHeader.serviceResult != UA_STATUSCODE_GOOD) return false;
+    shared_double_subscription_id = sres.subscriptionId;
+  }
+  
+  UA_NodeId id = UA_NODEID_STRING(cfg_.ns_index, const_cast<char*>(node_str.c_str()));
+  UA_MonitoredItemCreateRequest mreq = UA_MonitoredItemCreateRequest_default(id);
+  UA_MonitoredItemCreateResult mres = UA_Client_MonitoredItems_createDataChange(
+      client_, shared_double_subscription_id, UA_TIMESTAMPSTORETURN_BOTH, mreq,
+      this, handler_double, nullptr);
+      
+  if(mres.statusCode != UA_STATUSCODE_GOOD) {
+    return false;
+  }
+    
+  std::lock_guard<std::mutex> lk(sub_mtx_);
+  double_cbs_[mres.monitoredItemId] = cb;
+  subs_double_.push_back({node_str, shared_double_subscription_id, mres.monitoredItemId, cb});
+  return true;
+}
 
 
 bool UaClient::sub_bool_worker(const std::string& node_str, BoolCb cb) {
@@ -283,6 +327,8 @@ bool UaClient::sub_bool_worker(const std::string& node_str, BoolCb cb) {
   return true;
 }
 
+
+
 bool UaClient::sub_int16_worker(const std::string& node_str, IntCb cb) {
   if(!client_) return false;
   
@@ -321,41 +367,30 @@ bool UaClient::sub_int16_worker(const std::string& node_str, IntCb cb) {
   return true;
 }
 
-// void UaClient::rebind_all() {
-//   std::vector<IntSub> ints;
-//   std::vector<BoolSub> bools;
-//   {
-//     std::lock_guard<std::mutex> lk(sub_mtx_);
-//     ints = desired_subs_int_;
-//     bools = desired_subs_bool_;
-//   }
-//   {
-//     std::lock_guard<std::mutex> lk(cmd_mtx_);
-//     for(auto& s : ints)
-//       cmd_q_.push_back({UaCommand::Type::SubInt16, s.node, false, 0, nullptr});
-//     for(auto& s : bools)
-//       cmd_q_.push_back({UaCommand::Type::SubBool, s.node, false, 0, nullptr});
-//   }
-//   cmd_cv_.notify_one();
-// }
 void UaClient::rebind_all() {
   std::vector<IntSub> ints;
   std::vector<BoolSub> bools;
+  std::vector<DoubleSub> doubles;
   {
     std::lock_guard<std::mutex> lk(sub_mtx_);
     ints = desired_subs_int_;
     bools = desired_subs_bool_;
+    doubles = desired_subs_double_;
     subs_int_.clear();
     subs_bool_.clear();
+    subs_double_.clear();
     int_cbs_.clear();
     bool_cbs_.clear();
+    double_cbs_.clear();
   }
   {
     std::lock_guard<std::mutex> lk(cmd_mtx_);
     for(auto& s : ints)
-      cmd_q_.push_back({UaCommand::Type::SubInt16, s.node, false, 0, nullptr});
+      cmd_q_.push_back({UaCommand::Type::SubInt16, s.node, false, 0, 0.0, nullptr});
     for(auto& s : bools)
-      cmd_q_.push_back({UaCommand::Type::SubBool, s.node, false, 0, nullptr});
+      cmd_q_.push_back({UaCommand::Type::SubBool, s.node, false, 0, 0.0, nullptr});
+    for(auto& s: doubles)
+      cmd_q_.push_back({UaCommand::Type::SubDouble, s.node, false, 0, 0.0, nullptr});
   }
   cmd_cv_.notify_one();
 }

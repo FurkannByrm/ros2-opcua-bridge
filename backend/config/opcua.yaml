@@ -7,15 +7,19 @@ nodes:
   mode:     '"ROS2_COMM"."MODE"'
   command:  '"ROS2_COMM"."COMMAND"'
   speed:    '"ROS2_COMM"."SPEED"'
+  slider1:  '"ROS2_COMM"."GO_TO_POS_1"'
+  slider2:  '"ROS2_COMM"."GO_TO_POS_2"'
 
 structs:
   mod_root:  '"ROS2_COMM"."MOD"'
   stat_root: '"ROS2_COMM"."STAT"'
   sensing_root: '"ROS2_COMM"."STAT"."Robot_Sensing_Status"'
   cleaning_root: '"ROS2_COMM"."STAT"."Robot_Cleaning_Status"'
+  Workcell: '"ROS2_COMM"."MOD"."Workcell_Status"'
   discover:  false
   mod_fields: ["STARTUP","CALIBRATION","LEARNING","MAINTENANCE","EMERGENCY","COBOT","FULLY_AUTOMATIC","SHUTDOWN_MODE"]
   stat_fields: ["STARTUP","CALIBRATION","LEARNING","MAINTENANCE","EMERGENCY","COBOT"]
+
 
 timing:
   sampling_ms: 50

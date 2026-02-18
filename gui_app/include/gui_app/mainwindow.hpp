@@ -7,6 +7,10 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_srvs/srv/set_bool.hpp>
 #include "backend/srv/set_int16.hpp"
+#include "backend/srv/set_float32.hpp"
+
+using BoolSubscription    = rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr;
+using BoolClient = rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr;
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -20,43 +24,49 @@ private:
   QTimer*                                                 ros_timer_;
   
   rclcpp::Client<backend::srv::SetInt16>::SharedPtr       cli_speed_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_cobot_;
+  BoolClient       cli_cobot_;
   
   // Sensing robot clients
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_sensing_safetransfer_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_sensing_finished_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_sensing_touch_finished_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_sensing_active_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_sensing_touch_active_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_sensing_slide_command_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_sensing_running_;
+  BoolClient       cli_sensing_safetransfer_;
+  BoolClient       cli_sensing_finished_;
+  BoolClient       cli_sensing_touch_finished_;
+  BoolClient       cli_sensing_active_;
+  BoolClient       cli_sensing_touch_active_;
+  BoolClient       cli_sensing_slide_command_;
+  BoolClient       cli_sensing_running_;
   
   // Cleaning robot clients
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_cleaning_safetransfer_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_cleaning_finished_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_cleaning_active_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_cleaning_slide_command_;
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr       cli_cleaning_running_;
+  BoolClient       cli_cleaning_safetransfer_;
+  BoolClient       cli_cleaning_finished_;
+  BoolClient       cli_cleaning_active_;
+  BoolClient       cli_cleaning_slide_command_;
+  BoolClient       cli_cleaning_running_;
   
+
+  rclcpp::Client<backend::srv::SetFloat32>::SharedPtr       cli_slider1_set_pos_;
+  rclcpp::Client<backend::srv::SetFloat32>::SharedPtr       cli_slider2_set_pos_;
+  BoolClient       cli_slider1_go_pos_;
+  BoolClient       cli_slider2_go_pos_;
+
   // Subscriptions
   rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr   sub_speed_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_cobot_;
+  BoolSubscription   sub_cobot_;
   
   // Sensing subscriptions
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_sensing_safetransfer_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_sensing_finished_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_sensing_touch_finished_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_sensing_active_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_sensing_touch_active_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_sensing_slide_command_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_sensing_running_;
+  BoolSubscription   sub_sensing_safetransfer_;
+  BoolSubscription   sub_sensing_finished_;
+  BoolSubscription   sub_sensing_touch_finished_;
+  BoolSubscription   sub_sensing_active_;
+  BoolSubscription   sub_sensing_touch_active_;
+  BoolSubscription   sub_sensing_slide_command_;
+  BoolSubscription   sub_sensing_running_;
   
   // Cleaning subscriptions
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_cleaning_safetransfer_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_cleaning_finished_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_cleaning_active_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_cleaning_slide_command_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr    sub_cleaning_running_;
+  BoolSubscription   sub_cleaning_safetransfer_;
+  BoolSubscription   sub_cleaning_finished_;
+  BoolSubscription   sub_cleaning_active_;
+  BoolSubscription   sub_cleaning_slide_command_;
+  BoolSubscription   sub_cleaning_running_;
 
   // UI Elements - Toggle Buttons
   QPushButton* btnCobotToggle_;
@@ -76,6 +86,7 @@ private:
 
   void setup_ros();
   void call_speed_set(int value);
+  void call_slider_set(rclcpp::Client<backend::srv::SetFloat32>::SharedPtr client,float value);
   void call_service(rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client, bool value);
   
   QPushButton* createToggleButton(const QString& label);
