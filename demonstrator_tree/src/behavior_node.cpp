@@ -11,7 +11,7 @@ MagicianSubNode::MagicianSubNode(const std::string& node_name, const CobotConfig
     robot_home_status_.try_emplace(robot2,false,cfg_.cleaning_group.cleaning_home_vec);
 
     sensing_home_axis_pos_ = create_subscription<sensor_msgs::msg::JointState>
-    (cfg_.sensing_group.sensing_joint_states, 10,
+    (cfg_.sensing_group.sensing_joint_states,10,
         [this,robot1](const sensor_msgs::msg::JointState::ConstSharedPtr& msg){
             homePosCallback(msg,robot1);
         });
@@ -56,8 +56,8 @@ void MagicianSubNode::homePosCallback(const sensor_msgs::msg::JointState::ConstS
 MagicianClientNode::MagicianClientNode(const std::string& node_name, const CobotConfig& cfg) 
 : rclcpp::Node{node_name}, cfg_{cfg}{
 
-    sensing_client_ = this->create_client<std_srvs::srv::SetBool>(cfg_.sensing_group.sensing_service_name,10);
-    cleaning_client_= this->create_client<std_srvs::srv::SetBool>(cfg_.cleaning_group.cleaning_service_name,10);
+    sensing_client_ = this->create_client<std_srvs::srv::SetBool>(cfg_.sensing_group.sensing_service_name);
+    cleaning_client_= this->create_client<std_srvs::srv::SetBool>(cfg_.cleaning_group.cleaning_service_name);
 
     while(!sensing_client_->wait_for_service(std::chrono::microseconds(4))){
         if(!rclcpp::ok()){
@@ -152,8 +152,8 @@ BT::NodeStatus MagicianClientNode::sendHomingRequest(
 
 MagicianOpcUA::MagicianOpcUA(const std::string& node_name) : rclcpp::Node{node_name} 
 {
-    sensing_safe_transfer_client_ = create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/safetransfer_set", 10);
-    cleaning_safe_transfer_client_= create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/safetransfer_set", 10);
+    sensing_safe_transfer_client_ = create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/safetransfer_set");
+    cleaning_safe_transfer_client_= create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/safetransfer_set");
 
     while(!sensing_safe_transfer_client_->wait_for_service(std::chrono::milliseconds(4))){
 

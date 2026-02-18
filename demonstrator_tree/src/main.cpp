@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv){
 
-auto cfg = ConfigLoader::load_file("/home/cengo/ros_ws/src/demonstrator_tree/config/parameters.yaml");
+auto cfg = ConfigLoader::load_file("/home/furkan/magician_ws/src/demonstrator_tree/config/parameters.yaml");
 rclcpp::init(argc,argv);    
 auto subNode = std::make_shared<DemostratorTree::MagicianSubNode>("home_check_node",cfg);
 auto clientHoming = std::make_shared<DemostratorTree::MagicianClientNode>("homing_node",cfg);

@@ -16,7 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
+find_package(yaml-cpp REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SetInt16.srv"
@@ -28,30 +28,32 @@ include_directories(include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/build/src_generated)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/plugins/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/yaml-cpp/include)
+#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/yaml-cpp/include)
 
-set(UA_ENABLE_HISTORIZING OFF CACHE BOOL "Disable historizing")
-set(UA_ENABLE_DISCOVERY OFF CACHE BOOL "Disable discovery")
+#set(UA_ENABLE_HISTORIZING OFF CACHE BOOL "Disable historizing")
+#set(UA_ENABLE_DISCOVERY ON CACHE BOOL "Disable discovery")
+set(UA_ENABLE_DISCOVERY ON CACHE INTERNAL "" FORCE)
+set(UA_ENABLE_HISTORIZING OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541 open62541)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/yaml-cpp yaml-cpp)
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/yaml-cpp yaml-cpp)
 
 
-add_executable(test_server test/test_server.cpp)
+#add_executable(test_server test/test_server.cpp)
 add_executable(main src/main_with_ros.cpp
                     src/opcua_client.cpp
                     src/config.cpp
                     src/ros_bridge.cpp
               )
 
-target_link_libraries(test_server
-  open62541-object
-  open62541-plugins
-  Threads::Threads
-  m
-)
+#target_link_libraries(test_server
+#  open62541-object
+#  open62541-plugins
+#  Threads::Threads
+#  m
+#)
 target_link_libraries(main 
   yaml-cpp
-  open62541-object
+  open62541
   open62541-plugins
   Threads::Threads
   m
@@ -69,9 +71,9 @@ rosidl_target_interfaces(main
 ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 
-install(TARGETS test_server
-  DESTINATION lib/${PROJECT_NAME}
-)
+#install(TARGETS test_server
+    #DESTINATION lib/${PROJECT_NAME}
+  #)
 
 install(TARGETS main
 DESTINATION lib/${PROJECT_NAME}
