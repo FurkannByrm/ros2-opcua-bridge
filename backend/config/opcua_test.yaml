@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────────────────────
+#  OPC UA Test Configuration
+#  Uses localhost test_server instead of the real PLC
+#  Usage:
+#    Terminal 1:  ros2 run backend test_server
+#    Terminal 2:  ros2 run backend opc_bridge --ros-args -p config_file:=opcua_test.yaml
+# ─────────────────────────────────────────────────────────────
+
+endpoint: "opc.tcp://localhost:4840"
+namespace_index: 3
+
+nodes:
+  status:   '"ROS2_COMM"."STATUS"'
+  mode:     '"ROS2_COMM"."MODE"'
+  command:  '"ROS2_COMM"."COMMAND"'
+  speed:    '"ROS2_COMM"."SPEED"'
+  slider1:  '"ROS2_COMM"."GO_TO_POS_1"'
+  slider2:  '"ROS2_COMM"."GO_TO_POS_2"'
+
+structs:
+  mod_root:  '"ROS2_COMM"."MOD"'
+  stat_root: '"ROS2_COMM"."STAT"'
+  sensing_root: '"ROS2_COMM"."STAT"."Robot_Sensing_Status"'
+  cleaning_root: '"ROS2_COMM"."STAT"."Robot_Cleaning_Status"'
+  Workcell: '"ROS2_COMM"."MOD"."Workcell_Status"'
+  discover:  false
+  mod_fields: ["STARTUP","CALIBRATION","LEARNING","MAINTENANCE","EMERGENCY","COBOT","FULLY_AUTOMATIC","SHUTDOWN_MODE"]
+  stat_fields: ["STARTUP","CALIBRATION","LEARNING","MAINTENANCE","EMERGENCY","COBOT"]
+
+timing:
+  sampling_ms: 50
+  write_timeout_ms: 200
+  reconnect: { initial_ms: 500, max_ms: 10000, multiplier: 2.0 }

@@ -27,14 +27,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
 
 include_directories(include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/build/src_generated)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541/plugins/include)
 
-set(UA_ENABLE_DISCOVERY ON CACHE INTERNAL "" FORCE)
-set(UA_ENABLE_HISTORIZING OFF CACHE INTERNAL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/open62541 open62541)
-
+# ── open62541 (OPC UA library, must be installed system-wide) ──
+find_package(open62541 REQUIRED)
 
 
 add_executable(opc_bridge src/main.cpp
@@ -46,10 +41,8 @@ add_executable(opc_bridge src/main.cpp
 
 target_link_libraries(opc_bridge 
   yaml-cpp
-  open62541
-  open62541-plugins
+  open62541::open62541
   Threads::Threads
-  m
 )
 
 ament_target_dependencies(opc_bridge 
@@ -65,9 +58,16 @@ rosidl_target_interfaces(opc_bridge
 ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 
-#install(TARGETS test_server
-    #DESTINATION lib/${PROJECT_NAME}
-  #)
+# ── Test OPC UA Server (simulates PLC for development) ──
+add_executable(test_server test/test_server.cpp)
+target_link_libraries(test_server
+  open62541::open62541
+  Threads::Threads
+)
+
+install(TARGETS test_server
+    DESTINATION lib/${PROJECT_NAME}
+  )
 
 install(TARGETS opc_bridge
 DESTINATION lib/${PROJECT_NAME}
@@ -76,6 +76,11 @@ DESTINATION lib/${PROJECT_NAME}
 # Install config files
 install(DIRECTORY config/
 DESTINATION share/${PROJECT_NAME}/config
+)
+
+# Install launch files
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
 )
 
 ament_export_dependencies(rosidl_default_runtime)
