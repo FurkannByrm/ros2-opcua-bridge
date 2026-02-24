@@ -20,11 +20,11 @@ struct TimingCfg {
 };
 
 struct NodesCfg {
-    std::string status, mode, speed, command;
+    std::string status, mode, speed, command, slider1_go, slider2_go;
 };
 
 struct StructsCfg{
-    std::string mod_root, stat_root, sensing_root, cleaning_root;
+    std::string mod_root, stat_root, sensing_root, cleaning_root, workcell_status;
     bool discover;
     std::vector<std::string> mod_fields;
     std::vector<std::string> stat_fields;

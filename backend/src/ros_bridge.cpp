@@ -256,15 +256,46 @@ void RosBridge::setup_services(){
         res->success = true;
         res->message = "Speed updated";
       });
-        
-        }
 
-        // void RosBridge::setup_subscriptions(){
-        
-        //   sub_speed_ = this->create_subscription<std_msgs::msg::Int16>("/ros2_comm/speed_cmd",10, [this](const std_msgs::msg::Int16& msg){
-        
-        //     ua_->enqueue_write_int16(cfg_.nodes.speed, msg.data);
-          
-        //   });
-        
-        // }
+  srv_slider1_go_pos_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/slider1/go_pos",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+    std_srvs::srv::SetBool::Response::SharedPtr res){
+      ua_->enqueue_write_double(cfg_.nodes.slider1_go, req->data);
+      res->success = true;
+      res->message = std::string("running set to") + (req->data ? "true" : "false");
+    });
+  
+  srv_slider2_go_pos_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/slider2/go_pos",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+    std_srvs::srv::SetBool::Response::SharedPtr res){
+      ua_->enqueue_write_double(cfg_.nodes.slider2_go, req->data);
+      res->success = true;
+      res->message = std::string("running set to") + (req->data ? "true" : "false");
+      });
+
+  srv_slider1_set_pos_ = create_service<backend::srv::SetFloat32>(
+    "/ros2_comm/slider1/set_pos",
+    [this](const backend::srv::SetFloat32::Request::SharedPtr req,
+      backend::srv::SetFloat32::Response::SharedPtr res){
+      float new_pos = req->data;
+      ua_->enqueue_write_double(make_child_node(cfg_.structs.workcell_status, "Slider_1_actual position-linear"), new_pos);
+      res->success = true;
+      res->message = "slider1 pos update";
+    });
+    
+      srv_slider2_set_pos_ = create_service<backend::srv::SetFloat32>(
+    "/ros2_comm/slider2/set_pos",
+    [this](const backend::srv::SetFloat32::Request::SharedPtr req,
+      backend::srv::SetFloat32::Response::SharedPtr res){
+      float new_pos = req->data;
+      ua_->enqueue_write_double(make_child_node(cfg_.structs.workcell_status, "Slider_2_actual position-linear"), new_pos);
+      res->success = true;
+      res->message = "slider2 pos update";
+    });
+    
+
+}
+    
+    

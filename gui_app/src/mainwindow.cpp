@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   auto *headerLayout = new QVBoxLayout(headerFrame);
   
   auto *logoLabel = new QLabel(headerFrame);
-  QPixmap logo("/home/cengo/ros_ws/src/gui_app/png/magician_logo_full.png"); // -->  CHANGE IT !!
+  QPixmap logo("/home/furkan/magician_ws/src/gui_app/png/magician_logo_full.png"); // -->  CHANGE IT !!
   if (!logo.isNull()) {
     logoLabel->setPixmap(logo.scaledToHeight(150, Qt::SmoothTransformation));
     logoLabel->setAlignment(Qt::AlignCenter);
@@ -70,6 +70,73 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   speedLayout->addWidget(btnSpeedSet);
   mainLayout->addWidget(speedGroup);
   
+
+
+
+  auto *slider1Group = new QGroupBox("slider1 Control", central);
+  slider1Group->setStyleSheet(
+    "QGroupBox { font-weight: bold; font-size: 14px; border: 2px solid #3498db; "
+    "border-radius: 8px; margin-top: 10px; padding-top: 15px; background-color: #ecf0f1; }"
+    "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }"
+  );
+  auto *slider1Layout = new QHBoxLayout(slider1Group);
+  auto *slider1Edit = new QLineEdit(slider1Group);
+  slider1Edit->setStyleSheet("QLineEdit { padding: 8px; border: 2px solid #bdc3c7; border-radius: 5px; font-size: 12px; }");
+  auto *btnslider1Set = new QPushButton("Set Position", slider1Group);
+  btnslider1Set->setStyleSheet(
+    "QPushButton { background-color: #3498db; color: white; padding: 8px 15px; "
+    "border-radius: 5px; font-weight: bold; }"
+    "QPushButton:hover { background-color: #2980b9; }"
+    "QPushButton:pressed { background-color: #1c638e; }"
+  );
+  auto *btnslider1Go = new QPushButton("Go Position", slider1Group);
+  btnslider1Go->setStyleSheet(
+    "QPushButton { background-color: #3498db; color: white; padding: 8px 15px; "
+    "border-radius: 5px; font-weight: bold; }"
+    "QPushButton:hover { background-color: #2980b9; }"
+    "QPushButton:pressed { background-color: #1c638e; }"
+  );
+  slider1Edit->setPlaceholderText("Enter target positon");
+  slider1Layout->addWidget(new QLabel("Slider1:", slider1Group));
+  slider1Layout->addWidget(slider1Edit);
+  slider1Layout->addWidget(btnslider1Set);
+  slider1Layout->addWidget(btnslider1Go);
+  mainLayout->addWidget(slider1Group);
+
+
+  auto *slider2Group = new QGroupBox("slider2 Control", central);
+  slider2Group->setStyleSheet(
+    "QGroupBox { font-weight: bold; font-size: 14px; border: 2px solid #3498db; "
+    "border-radius: 8px; margin-top: 10px; padding-top: 15px; background-color: #ecf0f1; }"
+    "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }"
+  );
+  auto *slider2Layout = new QHBoxLayout(slider2Group);
+  auto *slider2Edit = new QLineEdit(slider2Group);
+  slider2Edit->setStyleSheet("QLineEdit { padding: 8px; border: 2px solid #bdc3c7; border-radius: 5px; font-size: 12px; }");
+  auto *btnslider2Set = new QPushButton("Set Position", slider2Group);
+  btnslider2Set->setStyleSheet(
+    "QPushButton { background-color: #3498db; color: white; padding: 8px 15px; "
+    "border-radius: 5px; font-weight: bold; }"
+    "QPushButton:hover { background-color: #2980b9; }"
+    "QPushButton:pressed { background-color: #1c638e; }"
+  );
+  auto *btnslider2Go = new QPushButton("Go Position", slider2Group);
+  btnslider2Go->setStyleSheet(
+    "QPushButton { background-color: #3498db; color: white; padding: 8px 15px; "
+    "border-radius: 5px; font-weight: bold; }"
+    "QPushButton:hover { background-color: #2980b9; }"
+    "QPushButton:pressed { background-color: #1c638e; }"
+  );
+  slider2Edit->setPlaceholderText("Enter target position");
+  slider2Layout->addWidget(new QLabel("Slider2:", slider2Group));
+  slider2Layout->addWidget(slider2Edit);
+  slider2Layout->addWidget(btnslider2Set);
+  slider2Layout->addWidget(btnslider2Go);
+  mainLayout->addWidget(slider2Group);
+
+
+
+
   auto *cobotGroup = new QGroupBox("🤖 COBOT Control", central);
   cobotGroup->setStyleSheet(
     "QGroupBox { font-weight: bold; font-size: 14px; border: 2px solid #9b59b6; "
@@ -147,7 +214,24 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     bool ok=false; int v = speedEdit->text().toInt(&ok);
     if(ok) call_speed_set(v);
   });
+
+  connect(btnslider1Set, &QPushButton::clicked, [this, slider1Edit]{
+    bool ok=false; float v = slider1Edit->text().toFloat(&ok);
+    if(ok) call_slider_set(cli_slider1_set_pos_,v);
+  });
   
+  connect(btnslider2Set, &QPushButton::clicked, [this, slider2Edit]{
+      bool ok=false; float v = slider2Edit->text().toFloat(&ok);
+      if(ok) call_slider_set(cli_slider2_set_pos_,v);
+    });
+
+  connect(btnslider1Go, &QPushButton::clicked, [this](bool checked){ 
+    call_service(cli_slider1_go_pos_, checked);
+  });
+
+  connect(btnslider2Go, &QPushButton::clicked, [this](bool checked){ 
+    call_service(cli_slider2_go_pos_, checked);
+  });
   connect(btnCobotToggle_, &QPushButton::toggled, [this](bool checked){ 
     updateToggleButtonStyle(btnCobotToggle_, checked);
     call_service(cli_cobot_, checked);
@@ -264,6 +348,13 @@ void MainWindow::setup_ros() {
   cli_cleaning_active_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/cleaning_active_set");
   cli_cleaning_slide_command_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/slide_command_set");
   cli_cleaning_running_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/running_set");
+
+  cli_slider1_set_pos_ = node_->create_client<backend::srv::SetFloat32>("/ros2_comm/slider1/set_pos");
+  cli_slider2_set_pos_ = node_->create_client<backend::srv::SetFloat32>("/ros2_comm/slider2/set_pos");
+  cli_slider1_go_pos_  = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/slider1/go_pos");
+  cli_slider2_go_pos_  = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/slider2/go_pos");
+
+
 
   sub_speed_ = node_->create_subscription<std_msgs::msg::Int16>(
     "/ros2_comm/speed", 10,
@@ -432,6 +523,18 @@ void MainWindow::call_speed_set(int value) {
   req->data = value;
   cli_speed_->async_send_request(req);
   statusBar()->showMessage(QString(" Speed set to: %1").arg(value), 3000);
+}
+
+
+void MainWindow::call_slider_set(rclcpp::Client<backend::srv::SetFloat32>::SharedPtr client, float value){
+if(!client->wait_for_service(std::chrono::seconds(1))){
+  statusBar()->showMessage("slider service not available!",3000);
+  return;
+}
+  auto req = std::make_shared<backend::srv::SetFloat32::Request>();
+  req->data = value;
+  client->async_send_request(req);
+  statusBar()->showMessage(QString("Slider set to %1").arg(value),3000);
 }
 
 void MainWindow::call_service(rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client, bool value) {

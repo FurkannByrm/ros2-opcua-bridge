@@ -4,17 +4,16 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
-                "/home/cengo/ros_ws/src/backend/third-party/open62541/include/**",
-                "/home/cengo/ros_ws/src/backend/third-party/yaml-cpp/include/**",
-                "/home/cengo/ros_ws/src/backend/include/**",
-                "/home/cengo/ros_ws/install/backend/include/**",
-                "/home/cengo/ros_ws/src/gui_app/include/**",
-                "/home/cengo/ros_ws/src/demonstrator_tree/include/**",
-                "/opt/ros/jazzy/include/**",
-                "/usr/include/x86_64-linux-gnu/qt6/**"
+                "/home/furkan/magician_ws/src/backend/third-party/open62541/include/**",
+                "/home/furkan/magician_ws/src/backend/include/**",
+                "/home/furkan/magician_ws/install/backend/include/**",
+                "/home/furkan/magician_ws/src/gui_app/include/**",
+                "/home/furkan/magician_ws/src/demonstrator_tree/include/**",
+                "/home/furkan/magician_ws/src/backend/include/**",
+                "/opt/ros/humble/include/**",
+                "/usr/include/x86_64-linux-gnu/qt5/**"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "linux-clang-x64"

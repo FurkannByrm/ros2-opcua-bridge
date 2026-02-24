@@ -12,12 +12,16 @@ UaConfig ConfigLoader::load_file(const std::string& yaml_path){
     cfg.nodes.speed    = root["nodes"]["speed"].as<std::string>();
     cfg.nodes.mode     = root["nodes"]["mode"].as<std::string>();
     cfg.nodes.command  = root["nodes"]["command"].as<std::string>();
+    cfg.nodes.slider1_go  = root["nodes"]["slider1"].as<std::string>();
+    cfg.nodes.slider2_go  = root["nodes"]["slider2"].as<std::string>();
+    
     cfg.structs.stat_root = root["structs"]["stat_root"].as<std::string>();
     cfg.structs.mod_root = root["structs"]["mod_root"].as<std::string>();
     cfg.structs.discover = root["structs"]["discover"].as<bool>();
     cfg.structs.sensing_root = root["structs"]["sensing_root"].as<std::string>();
     cfg.structs.cleaning_root = root["structs"]["cleaning_root"].as<std::string>();
-
+    cfg.structs.workcell_status = root["structs"]["Workcell"].as<std::string>();
+  
     cfg.timing.rc.initial_ms = root["timing"]["reconnect"]["initial_ms"].as<int>();
     cfg.timing.rc.max_ms     = root["timing"]["reconnect"]["max_ms"].as<int>();
     cfg.timing.rc.multiplier = root["timing"]["reconnect"]["multiplier"].as<double>();
