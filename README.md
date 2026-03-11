@@ -1,483 +1,500 @@
-## System Overview
+# Magician ROS 2 — Endüstriyel Robot Hücresi Kontrol Sistemi
 
-This workspace contains three main packages:
+Endüstriyel bir robot hücresini (PLC, sensing/cleaning cobotları, slider mekanizmaları) ROS 2 üzerinden yönetmek için geliştirilmiş bir otomasyon yazılım sistemidir. OPC UA protokolü ile PLC'ye bağlanır, Qt5 tabanlı operatör arayüzü sunar ve BehaviorTree tabanlı robot orkestrasyon mantığı içerir.
 
-- **backend**: OPC-UA client that bridges PLC data to ROS2 topics and services
-- **gui_app**: Qt5-based GUI application for monitoring and controlling the system
-- **demonstrator_tree**: BehaviorTree-based orchestration system for coordinating robot operations
+> Kurulum adımları için bkz. [INSTALLATION.md](INSTALLATION.md)
 
-### Architecture
+---
+
+## İçindekiler
+
+- [Sistem Mimarisi](#sistem-mimarisi)
+- [Paketler](#paketler)
+  - [backend — OPC UA ↔ ROS 2 Köprüsü](#backend--opc-ua--ros-2-köprüsü)
+  - [gui_app — Operatör Arayüzü](#gui_app--operatör-arayüzü)
+  - [demonstrator_tree — BehaviorTree Orkestrasyon](#demonstrator_tree--behaviortree-orkestrasyon)
+- [Sistemi Çalıştırma](#sistemi-çalıştırma)
+- [ROS 2 Arayüzleri](#ros-2-arayüzleri)
+- [OPC UA Adres Alanı](#opc-ua-adres-alanı)
+- [Kod Yapısı](#kod-yapısı)
+- [Hata Ayıklama](#hata-ayıklama)
+
+---
+
+## Sistem Mimarisi
+
+Sistem üç ROS 2 paketinden oluşur ve katmanlı bir mimari izler:
 
 ```
-┌─────────────────┐      OPC-UA      ┌──────────────────┐      ROS2       ┌─────────────────┐
-│   PLC/Server    │ ◄──────────────► │     backend      │ ◄──────────────► │    gui_app      │
-│  (Test Server)  │    (open62541)   │  (ros_bridge)    │  (topics/srvs)  │  (Qt5 GUI)      │
-└─────────────────┘                  └──────────────────┘                  └─────────────────┘
-                                              ▲
-                                              │ ROS2 Services
-                                              │
-                                     ┌────────┴──────────┐
-                                     │ demonstrator_tree │
-                                     │  (BehaviorTree)   │
-                                     └───────────────────┘
-                                              ▲
-                                              │ ROS2 Services
-                                              │
-                                     ┌────────┴──────────┐
-                                     │  Robot Controllers│
-                                     │  (Sensing/Clean)  │
-                                     └───────────────────┘
+                        ┌───────────────────────────────────────────────────────────┐
+                        │                  Operatör Katmanı                        │
+                        │                                                           │
+                        │  ┌─────────────────────────────────────────────────────┐  │
+                        │  │              gui_app  (Qt5 GUI)                     │  │
+                        │  │  Hız ayarı · Mod değiştirme · Robot kontrolleri    │  │
+                        │  │  Slider konumları · Gerçek zamanlı durum izleme    │  │
+                        │  └──────────────────────┬──────────────────────────────┘  │
+                        │                         │ ROS 2 Service Çağrıları         │
+                        │                         │ ROS 2 Topic Abonelikleri        │
+                        └─────────────────────────┼────────────────────────────────┘
+                                                  │
+                        ┌─────────────────────────┼────────────────────────────────┐
+                        │              Haberleşme Katmanı                          │
+                        │                         │                                │
+                        │  ┌──────────────────────▼──────────────────────────────┐  │
+                        │  │           backend  (opc_bridge düğümü)             │  │
+                        │  │                                                     │  │
+                        │  │  ┌─────────────┐   ┌────────────┐   ┌───────────┐  │  │
+                        │  │  │ UaClient    │   │ RosBridge  │   │ Config    │  │  │
+                        │  │  │ (open62541) │◄─►│ (rclcpp)   │   │ (YAML)   │  │  │
+                        │  │  └──────┬──────┘   └────────────┘   └───────────┘  │  │
+                        │  │         │                                           │  │
+                        │  └─────────┼───────────────────────────────────────────┘  │
+                        │            │ OPC UA (TCP)                                 │
+                        └────────────┼─────────────────────────────────────────────┘
+                                     │
+                        ┌────────────┼─────────────────────────────────────────────┐
+                        │  Saha      │  Katmanı                                    │
+                        │            ▼                                              │
+                        │  ┌──────────────────┐                                    │
+                        │  │   Siemens PLC     │ ← Gerçek üretim ortamı            │
+                        │  │  (veya test_server│   veya localhost simülasyonu       │
+                        │  │   simülasyonu)    │                                    │
+                        │  └──────────────────┘                                    │
+                        └──────────────────────────────────────────────────────────┘
+
+                        ┌──────────────────────────────────────────────────────────┐
+                        │               Orkestrasyon Katmanı                       │
+                        │                                                          │
+                        │  ┌────────────────────────────────────────────────────┐   │
+                        │  │         demonstrator_tree  (BehaviorTree.CPP)      │   │
+                        │  │                                                    │   │
+                        │  │  Sequence                                          │   │
+                        │  │  ├── Fallback                                      │   │
+                        │  │  │   ├── IsRobotAtHome  → joint_states kontrol     │   │
+                        │  │  │   └── CallHoming     → homing servis çağrısı    │   │
+                        │  │  └── CallOpcUI          → PLC'ye safe-transfer     │   │
+                        │  └────────────────────────────────────────────────────┘   │
+                        │         │                              │                  │
+                        │         │ /xbotcore/joint_states       │ /ros2_comm/      │
+                        │         │ /xbotcore/homing/switch*     │ safetransfer_set │
+                        │         ▼                              ▼                  │
+                        │  ┌──────────────┐           ┌──────────────────┐          │
+                        │  │ Robot        │           │ backend          │          │
+                        │  │ Kontrolcüler │           │ (opc_bridge)     │          │
+                        │  │ (xbotcore)   │           │                  │          │
+                        │  └──────────────┘           └──────────────────┘          │
+                        └──────────────────────────────────────────────────────────┘
 ```
 
-## Features
+### Veri Akışı
 
-### Backend Package
-- **Real-time OPC-UA Communication**: Bidirectional data exchange with industrial PLCs
-- **ROS2 Integration**: Full ROS2 pub/sub and service architecture
-- **Auto-reconnection**: Robust connection handling with exponential backoff
-- **Multi-threaded**: Asynchronous command queue with mutex-protected operations
-- **Configurable**: YAML-based configuration system
-
-### GUI Application
-- **Modern Qt5 Interface**: Real-time monitoring and control panel
-- **Speed Control**: Set and monitor system speed (0-2000)
-- **Robot Controls**: Toggle switches for sensing and cleaning operations
-- **Live Feedback**: Real-time state synchronization with PLC
-
-### Demonstrator Tree (NEW)
-- **BehaviorTree Orchestration**: Coordinated robot operation sequences
-- **Multi-Robot Coordination**: Simultaneous control of sensing and cleaning robots
-- **Homing Management**: Automatic robot homing with position verification
-- **Safe Transfer Protocol**: OPC-UA safe transfer signal management
-- **Fault Tolerance**: Robust error handling and retry mechanisms
-
-## Prerequisites
-
-### System Requirements
-- Ubuntu 22.04+ (ROS2 Jazzy/Humble)
-- ROS2 installed and sourced
-- Qt5 development libraries
-- BehaviorTree.CPP library
-- CMake 3.8+
-
-### Install Dependencies
-
-```bash
-# ROS2 dependencies
-sudo apt update
-sudo apt install ros-${ROS_DISTRO}-rclcpp ros-${ROS_DISTRO}-std-msgs ros-${ROS_DISTRO}-std-srvs ros-${ROS_DISTRO}-sensor-msgs
-
-# Qt5 for GUI
-sudo apt install qtbase5-dev qt5-qmake
-
-# BehaviorTree.CPP
-sudo apt install ros-${ROS_DISTRO}-behaviortree-cpp
-
-# YAML parser
-sudo apt install libyaml-cpp-dev
-
-# Build tools
-sudo apt install build-essential cmake git
+```
+PLC ──(OPC UA subscription)──► UaClient ──(callback)──► RosBridge ──(publish)──► ROS 2 Topics ──► GUI / BT
+GUI ──(service call)──► RosBridge ──(enqueue_write)──► UaClient ──(OPC UA write)──► PLC
+BT  ──(service call)──► RosBridge ──(enqueue_write)──► UaClient ──(OPC UA write)──► PLC
 ```
 
-## Building the Workspace
+---
 
-```bash
-# Navigate to workspace
-cd ~/ros_ws
+## Paketler
 
-# Build all packages
-colcon build
+### backend — OPC UA ↔ ROS 2 Köprüsü
 
-# Source the workspace
-source install/setup.bash
-```
+Sistemin çekirdek paketidir. PLC ile OPC UA protokolü üzerinden çift yönlü haberleşme sağlar ve tüm verileri ROS 2 topic/service olarak sunar.
 
-## Configuration
+#### Temel Bileşenler
 
-### Backend Configuration
+| Sınıf | Dosya | Görev |
+|---|---|---|
+| `UaClient` | `opcua_client.hpp/cpp` | open62541 istemcisi. Bağlantı, subscription, yazma işlemleri. Ayrı worker thread'de çalışır. Mutex korumalı komut kuyruğu. |
+| `RosBridge` | `ros_bridge.hpp/cpp` | ROS 2 düğümü. Publisher ve service tanımları. `UaClient`'tan gelen verileri topic olarak yayınlar, servis çağrılarını `UaClient`'a iletir. |
+| `ConfigLoader` | `config.hpp/cpp` | YAML dosyalarından (`opcua.yaml` / `opcua_test.yaml`) konfigürasyonu okur. |
+| `test_server` | `test/test_server.cpp` | PLC'yi simüle eden OPC UA sunucusu. Geliştirme ortamında donanımsız test imkanı sağlar. Yazma işlemlerini renkli terminal çıktısı olarak gösterir. |
 
-Edit `backend/config/opcua.yaml`:
+#### Özellikler
+
+- **Çift yönlü OPC UA haberleşme** — open62541 C kütüphanesi ile endüstriyel PLC'lere bağlanır
+- **Otomatik yeniden bağlanma** — Yapılandırılabilir exponential backoff ile bağlantı kesintilerini otomatik yönetir
+- **Çoklu iş parçacığı** — Worker thread, mutex korumalı asenkron komut kuyruğu (`std::deque<UaCommand>`)
+- **YAML konfigürasyon** — Endpoint, namespace, node yolları, zamanlama parametreleri dışarıdan ayarlanabilir
+- **Özel servis tipleri** — `SetInt16.srv` (hız), `SetFloat32.srv` (slider konumu)
+
+#### Konfigürasyon Dosyaları
+
+`backend/config/` altında iki yapılandırma dosyası bulunur:
+
+| Dosya | Kullanım |
+|---|---|
+| `opcua.yaml` | **Üretim** — Gerçek PLC endpoint'i (`opc.tcp://192.168.1.1:4840`) |
+| `opcua_test.yaml` | **Geliştirme** — Yerel test sunucusu (`opc.tcp://localhost:4840`) |
 
 ```yaml
-endpoint: "opc.tcp://localhost:4840" // just sample
+endpoint: "opc.tcp://192.168.1.1:4840"
 namespace_index: 3
 
 nodes:
-  speed: "\"ROS2_COMM\".\"SPEED\""
-  mode: "\"ROS2_COMM\".\"MODE\""
-  command: "\"ROS2_COMM\".\"COMMAND\""
+  status:   '"ROS2_COMM"."STATUS"'        # Int16
+  mode:     '"ROS2_COMM"."MODE"'           # Int16
+  command:  '"ROS2_COMM"."COMMAND"'        # Int16
+  speed:    '"ROS2_COMM"."SPEED"'          # Int16
+  slider1:  '"ROS2_COMM"."GO_TO_POS_1"'   # Double
+  slider2:  '"ROS2_COMM"."GO_TO_POS_2"'   # Double
 
 structs:
-  mod_root: "\"ROS2_COMM\".\"MOD\""
-  stat_root: "\"ROS2_COMM\".\"STAT\""
-  sensing_root: "\"ROS2_COMM\".\"SENSING\""
-  cleaning_root: "\"ROS2_COMM\".\"CLEANING\""
+  mod_root:      '"ROS2_COMM"."MOD"'
+  stat_root:     '"ROS2_COMM"."STAT"'
+  sensing_root:  '"ROS2_COMM"."STAT"."Robot_Sensing_Status"'
+  cleaning_root: '"ROS2_COMM"."STAT"."Robot_Cleaning_Status"'
+  Workcell:      '"ROS2_COMM"."MOD"."Workcell_Status"'
 
 timing:
-  sampling_ms: 100
-  write_timeout_ms: 1000
+  sampling_ms: 50               # Subscription örnekleme periyodu
+  write_timeout_ms: 200         # Yazma zaman aşımı
   reconnect:
-    initial_ms: 1000
-    max_ms: 30000
-    multiplier: 1.5
+    initial_ms: 500             # İlk yeniden bağlantı bekleme süresi
+    max_ms: 10000               # Maksimum bekleme süresi
+    multiplier: 2.0             # Exponential backoff çarpanı
 ```
 
-### Demonstrator Tree Configuration
+---
 
-Edit `demonstrator_tree/config/parameters.yaml`:
+### gui_app — Operatör Arayüzü
+
+Qt5 Widgets tabanlı operatör kontrol paneli. ROS 2 servis çağrıları ile `backend` üzerinden PLC'ye komut gönderir, topic abonelikleri ile gerçek zamanlı durum izler.
+
+#### Özellikler
+
+- **Hız kontrolü** — 0–2000 aralığında hız ayarı (`SetInt16` servisi)
+- **Mod değiştirme** — COBOT, STARTUP, MAINTENANCE vb. mod toggle butonları
+- **Sensing robot kontrolleri** — Safe-transfer, sensing-active, touch-sensing, finished, slide-command, running
+- **Cleaning robot kontrolleri** — Safe-transfer, cleaning-active, finished, slide-command, running
+- **Slider pozisyon kontrolleri** — İki slider için konum belirleme (`SetFloat32`) ve hareket başlatma
+- **Gerçek zamanlı durum** — Tüm durumlar ROS 2 topic'lerinden anlık güncellenir
+
+#### Teknik Detay
+
+- `MainWindow` sınıfı hem Qt5 QMainWindow hem de dahili bir `rclcpp::Node` barındırır
+- `QTimer` ile ROS 2 executor periyodik olarak döndürülür (UI thread'i bloklanmaz)
+- Toggle butonları aktif/pasif duruma göre renk değiştirir
+
+---
+
+### demonstrator_tree — BehaviorTree Orkestrasyon
+
+BehaviorTree.CPP kütüphanesi ile robotların güvenli pozisyonda olup olmadığını kontrol eder, gerekirse homing işlemi başlatır ve PLC'ye safe-transfer sinyali gönderir.
+
+#### BehaviorTree Yapısı
+
+```xml
+<root BTCPP_format="4">
+  <BehaviorTree ID="MainTree">
+    <Sequence name="magician_sequence">
+      <Fallback>
+        <IsRobotAtHome   name="check_home_pos"/>
+        <CallHoming      name="call_homing_service"/>
+      </Fallback>
+      <CallOpcUI         name="call_opcua_service"/>
+    </Sequence>
+  </BehaviorTree>
+</root>
+```
+
+**Akış mantığı:**
+1. `IsRobotAtHome` — Her iki robotun (`sensing_cobot`, `cleaning_cobot`) joint pozisyonlarını kontrol eder (±0.01 rad tolerans)
+2. `CallHoming` — Home pozisyonunda olmayan robotlar için homing servisini çağırır (paralel async çağrı desteği, 5 sn timeout)
+3. `CallOpcUI` — Tüm robotlar home'da ise PLC'ye safe-transfer sinyali gönderir
+
+#### BT Düğüm Sınıfları
+
+| Sınıf | Görev |
+|---|---|
+| `MagicianSubNode` | `/xbotcore/joint_states` topic'ine abone olur. Anlık eklem açılarını `parameters.yaml`'daki home pozisyonları ile karşılaştırır. |
+| `MagicianClientNode` | Homing servislerini (`/xbotcore/homing/switch1`, `switch2`) çağırır. Her iki robot için paralel async çağrı yapabilir. |
+| `MagicianOpcUA` | `/ros2_comm/sensing/safetransfer_set` ve `/ros2_comm/cleaning/safetransfer_set` servislerini çağırarak PLC'ye safe-transfer durumunu bildirir. |
+
+#### Konfigürasyon
+
+`demonstrator_tree/config/parameters.yaml`:
 
 ```yaml
 cobot1:
   robot_name: "sensing_cobot"
   sensing_joint_states: "/xbotcore/joint_states"
-  sensing_service: "/xbotcore/homing/switch1" 
+  sensing_service: "/xbotcore/homing/switch1"
   home_position: [0.0, 0.605, 1.571, 0.0, 0.995, 0.0]
- 
-cobot2: 
+
+cobot2:
   robot_name: "cleaning_cobot"
   cleaning_joint_states: "/xbotcore/joint_states"
   cleaning_service: "/xbotcore/homing/switch2"
   home_position: [0.0, 0.605, 1.571, 0.0, 0.995, 0.0]
 ```
 
-Edit `demonstrator_tree/config/bt_tree.xml`:
+#### Dış Bağımlılıklar (xbotcore tarafı)
 
-```xml
-<root BTCPP_format="4">
- <BehaviorTree ID="MainTree">
-    <Sequence name="magician_sequence">
-     <Fallback>
-        <IsRobotAtHome name="check_home_pos"/>
-        <CallHoming name="call_homing_service"/>
-     </Fallback>
-     <CallOpcUI name="call_opcua_service"/>
-    </Sequence>
- </BehaviorTree>
-</root>
+| Arayüz | Tip | Yön |
+|---|---|---|
+| `/xbotcore/joint_states` | `sensor_msgs/JointState` | ← Abone olunur |
+| `/xbotcore/homing/switch1` | `std_srvs/SetBool` | → Çağrılır |
+| `/xbotcore/homing/switch2` | `std_srvs/SetBool` | → Çağrılır |
+
+---
+
+## Sistemi Çalıştırma
+
+### Üretim Ortamı (Gerçek PLC)
+
+PLC endpoint'ini `backend/config/opcua.yaml` dosyasında ayarlayın, ardından:
+
+```bash
+# Launch ile (opc_bridge + GUI otomatik başlar)
+ros2 launch backend system.launch.py
+
+# veya ayrı terminallerde:
+ros2 run backend opc_bridge                   # OPC UA köprüsü
+ros2 run gui_app gui_node                     # Qt5 GUI
+ros2 run demonstrator_tree demo               # BehaviorTree
 ```
 
-## Running the System
+### Test Ortamı (PLC olmadan)
 
-### Option 1: Complete System with Test Server
-
-**Terminal 1** - Start the OPC-UA test server:
 ```bash
-cd ~/ros_ws
-source install/setup.bash
-ros2 run backend test_server
+# Sadece backend testi (test_server + opc_bridge)
+ros2 launch backend test_system.launch.py
+
+# Tam sistem testi (test_server + opc_bridge + GUI)
+ros2 launch backend full_test_system.launch.py
 ```
 
-**Terminal 2** - Start robot homing service simulator (for testing):
+veya manuel olarak:
+
 ```bash
-cd ~/ros_ws
-source install/setup.bash
-python3 src/demonstrator_tree/test/service_server.py
+ros2 run backend test_server                                          # OPC UA simülasyon sunucusu (localhost:4840)
+ros2 run backend opc_bridge --ros-args -p config:=opcua_test.yaml     # Köprü → localhost
+ros2 run gui_app gui_node                                             # GUI
 ```
 
-**Terminal 3** - Start the backend bridge:
-```bash
-cd ~/ros_ws
-source install/setup.bash
-ros2 run backend main
-```
+Test sunucusu her yazma işlemini renkli terminal çıktısı ile gösterir — servis çağrılarını gerçek zamanlı izleyebilirsiniz.
 
-**Terminal 4** - Launch the GUI:
-```bash
-cd ~/ros_ws
-source install/setup.bash
-ros2 run gui_app gui_node
-```
+### BehaviorTree Testi
 
-**Terminal 5** - Run the demonstrator tree:
 ```bash
-cd ~/ros_ws
-source install/setup.bash
+# Mock homing servisi (ayrı terminalde)
+ros2 run demonstrator_tree service_server.py
+
+# BehaviorTree düğümü
 ros2 run demonstrator_tree demo
 ```
 
-### Option 2: Connect to Real Robots
+---
 
-1. Update `opcua.yaml` with your PLC endpoint
-2. Configure `parameters.yaml` with actual robot topics/services
-3. Skip Terminal 2 (test server) and use real robot controllers
+## ROS 2 Arayüzleri
 
-## Demonstrator Tree Package Details
+### Yayınlanan Topic'ler (backend → subscribers)
 
-### Purpose
+| Topic | Tip | Açıklama |
+|---|---|---|
+| `/ros2_comm/speed` | `std_msgs/Int16` | Güncel hız değeri |
+| `/ros2_comm/mod/cobot` | `std_msgs/Bool` | COBOT modu durumu |
+| `/ros2_comm/sensing/home_st` | `std_msgs/Bool` | Sensing robot home (safe-transfer) durumu |
+| `/ros2_comm/sensing/finished` | `std_msgs/Bool` | Sensing tamamlandı |
+| `/ros2_comm/sensing/touch_finished` | `std_msgs/Bool` | Touch-sensing tamamlandı |
+| `/ros2_comm/sensing/sensing_active` | `std_msgs/Bool` | Sensing aktif |
+| `/ros2_comm/sensing/touch_active` | `std_msgs/Bool` | Touch-sensing aktif |
+| `/ros2_comm/sensing/slide_command` | `std_msgs/Bool` | Sensing slide komutu |
+| `/ros2_comm/sensing/running` | `std_msgs/Bool` | Sensing çalışıyor |
+| `/ros2_comm/cleaning/home_st` | `std_msgs/Bool` | Cleaning robot home (safe-transfer) durumu |
+| `/ros2_comm/cleaning/finished` | `std_msgs/Bool` | Cleaning tamamlandı |
+| `/ros2_comm/cleaning/cleaning_active` | `std_msgs/Bool` | Cleaning aktif |
+| `/ros2_comm/cleaning/slide_command` | `std_msgs/Bool` | Cleaning slide komutu |
+| `/ros2_comm/cleaning/running` | `std_msgs/Bool` | Cleaning çalışıyor |
 
-The `demonstrator_tree` package implements a **BehaviorTree-based state machine** that orchestrates complex robot operations. It ensures robots are in safe positions before allowing system operations to proceed.
+### Servisler (clients → backend → PLC)
 
-### Key Features
+| Servis | Tip | Açıklama |
+|---|---|---|
+| `/ros2_comm/speed_set` | `backend/SetInt16` | Hız değeri ayarla |
+| `/ros2_comm/mod/cobot_set` | `std_srvs/SetBool` | COBOT modunu aç/kapat |
+| `/ros2_comm/sensing/safetransfer_set` | `std_srvs/SetBool` | Sensing safe-transfer |
+| `/ros2_comm/sensing/finished_set` | `std_srvs/SetBool` | Sensing finished |
+| `/ros2_comm/sensing/touch_finished_set` | `std_srvs/SetBool` | Touch-sensing finished |
+| `/ros2_comm/sensing/active_set` | `std_srvs/SetBool` | Sensing active |
+| `/ros2_comm/sensing/touch_active_set` | `std_srvs/SetBool` | Touch-sensing active |
+| `/ros2_comm/sensing/slide_command_set` | `std_srvs/SetBool` | Sensing slide command |
+| `/ros2_comm/sensing/running` | `std_srvs/SetBool` | Sensing running |
+| `/ros2_comm/cleaning/safetransfer_set` | `std_srvs/SetBool` | Cleaning safe-transfer |
+| `/ros2_comm/cleaning/cleaning_finished_set` | `std_srvs/SetBool` | Cleaning finished |
+| `/ros2_comm/cleaning/cleaning_active_set` | `std_srvs/SetBool` | Cleaning active |
+| `/ros2_comm/cleaning/slide_command_set` | `std_srvs/SetBool` | Cleaning slide command |
+| `/ros2_comm/cleaning/running_set` | `std_srvs/SetBool` | Cleaning running |
+| `/ros2_comm/slider1/go_pos` | `std_srvs/SetBool` | Slider 1 harekete başla |
+| `/ros2_comm/slider1/set_pos` | `backend/SetFloat32` | Slider 1 hedef konum ayarla |
+| `/ros2_comm/slider2/go_pos` | `std_srvs/SetBool` | Slider 2 harekete başla |
+| `/ros2_comm/slider2/set_pos` | `backend/SetFloat32` | Slider 2 hedef konum ayarla |
 
-#### 1. **Multi-Robot Homing Coordination**
-- Monitors joint states of two robots (sensing and cleaning)
-- Verifies if robots are at home position (±0.01 rad tolerance)
-- Triggers homing services if robots are not at home
-- Supports parallel homing of both robots
+### Özel Servis Tanımları
 
-#### 2. **BehaviorTree Control Flow**
-The tree implements a **Fallback → Sequence** pattern:
-- **Fallback**: Try to verify home position, if failed → call homing
-- **Sequence**: After homing, enable OPC-UA safe transfer
-
-#### 3. **Safe Transfer Protocol**
-After successful homing:
-- Signals to PLC via `/ros2_comm/sensing/safetransfer_set`
-- Signals to PLC via `/ros2_comm/cleaning/safetransfer_set`
-- Ensures system is ready for safe material transfer
-
-### Architecture Components
-
-#### **MagicianSubNode** (Subscriber Node)
-- Subscribes to `/xbotcore/joint_states` for both robots
-- Compares current joint positions with configured home positions
-- Maintains static `robot_home_status_` map for state tracking
-- Provides `checkPos()` for BehaviorTree condition checking
-
-```cpp
-// Example usage in BehaviorTree
-factory.registerSimpleAction("IsRobotAtHome", [&](BT::TreeNode&){
-    return subNode->checkPos();
-});
+```
+# srv/SetInt16.srv          # srv/SetFloat32.srv
+int16 data                  float32 data
+---                         ---
+bool success                bool success
+string message              string message
 ```
 
-#### **MagicianClientNode** (Service Client)
-- Calls homing services: `/xbotcore/homing/switch1` and `switch2`
-- Implements smart homing logic:
-  - If only one robot needs homing → single call
-  - If both need homing → parallel async calls
-- 5-second timeout per service call
-- Returns `BT::NodeStatus::SUCCESS/FAILURE`
+---
 
-```cpp
-// Example: Parallel homing
-auto sensing_future = sensing_client_->async_send_request(request);
-auto cleaning_future = cleaning_client_->async_send_request(request);
+## OPC UA Adres Alanı
+
+Test sunucusu ve gerçek PLC aynı node ağacını `ns=3` altında sunar:
+
+```
+Objects/
+└── ROS2_COMM
+    ├── STATUS                                    Int16
+    ├── MODE                                      Int16
+    ├── COMMAND                                   Int16
+    ├── SPEED                                     Int16
+    ├── GO_TO_POS_1                               Double
+    ├── GO_TO_POS_2                               Double
+    │
+    ├── MOD/
+    │   ├── STARTUP                               Bool
+    │   ├── CALIBRATION                           Bool
+    │   ├── LEARNING                              Bool
+    │   ├── MAINTENANCE                           Bool
+    │   ├── EMERGENCY                             Bool
+    │   ├── COBOT                                 Bool
+    │   ├── FULLY_AUTOMATIC                       Bool
+    │   ├── SHUTDOWN_MODE                         Bool
+    │   └── Workcell_Status/
+    │       ├── Slider_1_actual position-linear   Double
+    │       └── Slider_2_actual position-linear   Double
+    │
+    └── STAT/
+        ├── STARTUP                               Bool
+        ├── CALIBRATION                           Bool
+        ├── LEARNING                              Bool
+        ├── MAINTENANCE                           Bool
+        ├── EMERGENCY                             Bool
+        ├── COBOT                                 Bool
+        ├── Robot_Sensing_Status/
+        │   ├── robothome_safetransfer            Bool
+        │   ├── sensing-finised                   Bool
+        │   ├── touchsensing-finished             Bool
+        │   ├── sensing-active                    Bool
+        │   ├── touchsensing-active               Bool
+        │   ├── slide command                     Bool
+        │   └── running                           Bool
+        └── Robot_Cleaning_Status/
+            ├── robothome_safetransfer            Bool
+            ├── cleaning-finished                 Bool
+            ├── cleaning-active                   Bool
+            ├── slide command                     Bool
+            └── running                           Bool
 ```
 
-#### **MagicianOpcUA** (OPC-UA Service Client)
-- Calls backend safe transfer services
-- Enables PLC signals after successful homing
-- No response validation (fire-and-forget pattern)
+---
 
-### Initialization Sequence
+## Kod Yapısı
 
-1. **4-second warmup period**: Allows all subscribers to receive initial joint states
-2. **MultiThreadedExecutor**: Spins all nodes simultaneously for async operations
-3. **BehaviorTree registration**: Maps C++ functions to XML tree nodes
-4. **Tree execution**: `tickWhileRunning()` runs until completion
+```
+magician_ws/src/
+│
+├── backend/                           # OPC UA ↔ ROS 2 köprü paketi
+│   ├── include/backend/
+│   │   ├── config.hpp                 # UaConfig, TimingCfg, NodesCfg yapıları
+│   │   ├── opcua_client.hpp           # UaClient sınıfı (connect, subscribe, write)
+│   │   ├── ros_bridge.hpp             # RosBridge sınıfı (publisher + service tanımları)
+│   │   └── naming.hpp                 # OPC UA node-ID yol yardımcısı
+│   ├── src/
+│   │   ├── main.cpp                   # Giriş noktası (config parametresi, executor)
+│   │   ├── opcua_client.cpp           # Worker döngüsü, reconnect, subscription yönetimi
+│   │   ├── ros_bridge.cpp             # Publisher ve service kurulumu
+│   │   └── config.cpp                 # YAML ayrıştırma (yaml-cpp)
+│   ├── test/
+│   │   └── test_server.cpp            # PLC simülasyon sunucusu
+│   ├── srv/
+│   │   ├── SetInt16.srv               # Özel int16 servis tanımı
+│   │   └── SetFloat32.srv             # Özel float32 servis tanımı
+│   ├── config/
+│   │   ├── opcua.yaml                 # Üretim konfigürasyonu (gerçek PLC)
+│   │   └── opcua_test.yaml            # Test konfigürasyonu (localhost)
+│   └── launch/
+│       ├── system.launch.py           # Üretim: opc_bridge + GUI
+│       ├── test_system.launch.py      # Test: test_server + opc_bridge
+│       └── full_test_system.launch.py # Test: test_server + opc_bridge + GUI
+│
+├── gui_app/                           # Qt5 operatör arayüzü paketi
+│   ├── include/gui_app/
+│   │   └── mainwindow.hpp             # MainWindow sınıfı (Qt5 + ROS 2)
+│   ├── src/
+│   │   ├── main.cpp                   # Qt Application + ROS 2 init
+│   │   └── mainwindow.cpp            # UI oluşturma, servis çağrıları, topic abonelikleri
+│   └── png/                           # Logo ve görsel varlıklar
+│
+├── demonstrator_tree/                 # BehaviorTree orkestrasyon paketi
+│   ├── include/demonstrator_tree/
+│   │   ├── behavior_node.hpp          # MagicianSubNode, MagicianClientNode, MagicianOpcUA
+│   │   └── parameters_parser.hpp      # CobotConfig YAML ayrıştırıcı
+│   ├── src/
+│   │   ├── main.cpp                   # BT fabrika kurulumu + executor
+│   │   ├── behavior_node.cpp          # BT düğüm implementasyonları
+│   │   └── parameters_parser.cpp      # YAML → CobotConfig dönüşümü
+│   ├── config/
+│   │   ├── bt_tree.xml                # BehaviorTree XML tanımı
+│   │   └── parameters.yaml            # Robot home pozisyonları ve servis isimleri
+│   └── test/
+│       └── service_server.py          # Mock homing servisi (test için)
+│
+├── README.md                          # ← Bu dosya
+└── INSTALLATION.md                    # Kurulum kılavuzu
+```
 
-### Error Handling
+---
 
-- **Timeout Protection**: All service calls have 5-second timeouts
-- **State Verification**: Joint position tolerance of 0.01 radians
-- **Failure Propagation**: BehaviorTree FAILURE stops execution
-- **Logging**: Comprehensive RCLCPP_INFO/ERROR messages
-
-### Use Case Example
-
-**Scenario**: System startup sequence
-
-1. User starts all ROS2 nodes
-2. `demonstrator_tree` begins execution
-3. **Check**: Are both robots at home?
-   - **YES** → Skip to step 6
-   - **NO** → Continue to step 4
-4. **Homing**: Call homing service(s) for non-homed robot(s)
-5. **Wait**: Services return success after robots reach home
-6. **Safe Transfer**: Signal to PLC that robots are ready
-7. **Complete**: Tree returns SUCCESS, system ready for operations
-
-## ROS2 Topics & Services
-
-### Backend Published Topics
-
-| Topic | Type | Description |
-|-------|------|-------------|
-| `/ros2_comm/speed` | `std_msgs/Int16` | Current speed value |
-| `/ros2_comm/mod/cobot` | `std_msgs/Bool` | COBOT mode state |
-| `/ros2_comm/sensing/home_st` | `std_msgs/Bool` | Sensing robot home status |
-| `/ros2_comm/sensing/finished` | `std_msgs/Bool` | Sensing operation finished |
-| `/ros2_comm/sensing/sensing_active` | `std_msgs/Bool` | Sensing active state |
-| `/ros2_comm/cleaning/home_st` | `std_msgs/Bool` | Cleaning robot home status |
-| `/ros2_comm/cleaning/finished` | `std_msgs/Bool` | Cleaning operation finished |
-| `/ros2_comm/cleaning/cleaning_active` | `std_msgs/Bool` | Cleaning active state |
-
-### Backend Services
-
-| Service | Type | Description |
-|---------|------|-------------|
-| `/ros2_comm/speed_set` | `backend/SetInt16` | Set speed value |
-| `/ros2_comm/mod/cobot_set` | `std_srvs/SetBool` | Set COBOT mode |
-| `/ros2_comm/sensing/safetransfer_set` | `std_srvs/SetBool` | Set sensing safe transfer |
-| `/ros2_comm/sensing/finished_set` | `std_srvs/SetBool` | Set sensing finished |
-| `/ros2_comm/sensing/active_set` | `std_srvs/SetBool` | Set sensing active |
-| `/ros2_comm/cleaning/safetransfer_set` | `std_srvs/SetBool` | Set cleaning safe transfer |
-| `/ros2_comm/cleaning/cleaning_finished_set` | `std_srvs/SetBool` | Set cleaning finished |
-| `/ros2_comm/cleaning/cleaning_active_set` | `std_srvs/SetBool` | Set cleaning active |
-
-### Robot Controller Services (Expected)
-
-| Service | Type | Description |
-|---------|------|-------------|
-| `/xbotcore/homing/switch1` | `std_srvs/SetBool` | Sensing robot homing |
-| `/xbotcore/homing/switch2` | `std_srvs/SetBool` | Cleaning robot homing |
-
-### Robot Controller Topics (Expected)
-
-| Topic | Type | Description |
-|-------|------|-------------|
-| `/xbotcore/joint_states` | `sensor_msgs/JointState` | Current joint positions |
-
-## Debugging
-
-### Check ROS2 Communication
+## Hata Ayıklama
 
 ```bash
-# List all topics
-ros2 topic list
+# Topic ve servis listesi
+ros2 topic list | grep ros2_comm
+ros2 service list | grep ros2_comm
 
-# Monitor robot joint states
-ros2 topic echo /xbotcore/joint_states
-
-# Monitor OPC-UA speed
+# Anlık değer izleme
 ros2 topic echo /ros2_comm/speed
+ros2 topic echo /ros2_comm/mod/cobot
+ros2 topic echo /ros2_comm/sensing/home_st
 
-# Call homing service manually
-ros2 service call /xbotcore/homing/switch1 std_srvs/srv/SetBool "{data: true}"
+# Manuel servis çağrıları
+ros2 service call /ros2_comm/speed_set backend/srv/SetInt16 "{data: 500}"
+ros2 service call /ros2_comm/mod/cobot_set std_srvs/srv/SetBool "{data: true}"
+ros2 service call /ros2_comm/sensing/active_set std_srvs/srv/SetBool "{data: true}"
+ros2 service call /ros2_comm/slider1/set_pos backend/srv/SetFloat32 "{data: 150.0}"
+ros2 service call /ros2_comm/slider1/go_pos std_srvs/srv/SetBool "{data: true}"
 
-# Call safe transfer service
-ros2 service call /ros2_comm/sensing/safetransfer_set std_srvs/srv/SetBool "{data: true}"
+# BehaviorTree için joint state gözlemi
+ros2 topic echo /xbotcore/joint_states
 ```
 
-### Monitor Demonstrator Tree
+---
 
-The tree logs detailed execution flow:
-```
-[INFO] sensing_cobot - ROBOT HOME POSITION
-[INFO] cleaning_cobot - Robot NOT home
-[INFO] CLEANING HOMING SUCCESS
-[INFO] ALL COBOT HOMING SUCCESS
-[INFO] Safe Transfer Home enabled.
-```
+## Gereksinimler
 
-### Test BehaviorTree Logic
+| Bileşen | Versiyon |
+|---|---|
+| Ubuntu | 22.04 LTS |
+| ROS 2 | Humble Hawksbill |
+| C++ | 17 |
+| open62541 | ≥ 1.4 |
+| Qt5 | 5.x (qtbase5-dev) |
+| BehaviorTree.CPP | ros-humble-behaviortree-cpp |
+| yaml-cpp | libyaml-cpp-dev |
 
-Use the test server to simulate robot responses:
-```bash
-# Terminal 1: Start test homing server
-python3 src/demonstrator_tree/test/service_server.py
+Detaylı kurulum adımları için bkz. [INSTALLATION.md](INSTALLATION.md)
 
-# Terminal 2: Run demonstrator tree
-ros2 run demonstrator_tree demo
-```
+---
 
-## Code Structure
+## Geliştirici
 
-### Backend Package
-
-```
-backend/
-├── include/backend/
-│   ├── config.hpp           # YAML configuration loader
-│   ├── opcua_client.hpp     # OPC-UA client interface
-│   ├── ros_bridge.hpp       # ROS2 bridge class
-│   └── naming.hpp           # Node ID utilities
-├── src/
-│   ├── config.cpp           # Config implementation
-│   ├── opcua_client.cpp     # Client implementation
-│   ├── ros_bridge.cpp       # Bridge implementation
-│   └── main_with_ros.cpp    # Main entry point
-├── test/
-│   └── test_server.cpp      # OPC-UA test server
-├── srv/
-│   └── SetInt16.srv         # Custom service definition
-└── config/
-    └── opcua.yaml           # Configuration file
-```
-
-### GUI Package
-
-```
-gui_app/
-├── include/gui_app/
-│   └── mainwindow.hpp       # Main window header
-├── src/
-│   ├── main.cpp             # Application entry
-│   └── mainwindow.cpp       # GUI implementation
-└── png/
-    └── magician_logo_full.png  # Logo asset
-```
-
-### Demonstrator Tree Package
-
-```
-demonstrator_tree/
-├── include/demonstrator_tree/
-│   ├── behavior_node.hpp        # BehaviorTree node classes
-│   └── parameters_parser.hpp    # YAML config parser
-├── src/
-│   ├── main.cpp                 # Entry point + BT setup
-│   ├── behavior_node.cpp        # Node implementations
-│   └── parameters_parser.cpp    # Config loader
-├── config/
-│   ├── bt_tree.xml              # BehaviorTree structure
-│   └── parameters.yaml          # Robot configuration
-└── test/
-    └── service_server.py        # Test homing server
-```
-
-## Important Configuration Notes
-
-### Hardcoded Paths
-
-The following files contain absolute paths that must be updated:
-
-1. **GUI Logo Path** (`mainwindow.cpp` ~line 30)
-2. **BehaviorTree XML** (`main.cpp` line with `createTreeFromFile`)
-3. **Parameters YAML** (`main.cpp` line with `load_file`)
-
-Update these paths to match your workspace location.
-
-### Joint Tolerance
-
-Homing verification uses 0.01 radian tolerance (defined in `behavior_node.hpp`):
-```cpp
-const double JOINT_TOL = 0.01;
-```
-
-Adjust if needed based on your robot's precision.
-
-## Advanced Features
-
-### Extending the BehaviorTree
-
-Add new actions by registering them in `main.cpp`:
-
-```cpp
-factory.registerSimpleAction("MyAction", [&](BT::TreeNode&){
-    // Your logic here
-    return BT::NodeStatus::SUCCESS;
-});
-```
-
-Then update `bt_tree.xml`:
-```xml
-<MyAction name="custom_action"/>
-```
-
-### Adding More Robots
-
-1. Add robot config to `parameters.yaml`
-2. Create new subscriber in `MagicianSubNode`
-3. Create new service client in `MagicianClientNode`
-4. Update `homingCall()` logic for N robots
-
-## License
-
-TODO: Add license information
-
-## Maintainer
-
-(frknbyrm05@gmail.com)
+frknbyrm05@gmail.com
