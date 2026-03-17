@@ -1,5 +1,7 @@
 #include "backend/ros_bridge.hpp"
 #include "backend/naming.hpp"
+#include <cmath>
+#include <std_msgs/msg/detail/float32__struct.hpp>
 
 RosBridge::RosBridge(const UaConfig& cfg)
 : Node("ros2_opcua_bridge"), cfg_{cfg} {
@@ -26,28 +28,41 @@ RosBridge::RosBridge(const UaConfig& cfg)
   pub_sensing_slide_command_  = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/slide_command",qos);
   pub_sensing_running_  = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/running",qos);
 
+  pub_sensing_slider_actual_pos_ =this->create_publisher<std_msgs::msg::Float32>("/ros2_comm/sensing/slider_actual_pos",qos); 
+
+  pub_cleaning_slider_actual_pos_ =this->create_publisher<std_msgs::msg::Float32>("/ros2_comm/cleaning/slider_actual_pos",qos);
 
   pub_cleaning_robot_home_st_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/home_st",qos);
   pub_cleaning_finished_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/finished",qos);
   pub_cleaning_active_ =  this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/cleaning_active",qos);
   pub_cleaning_slide_command_  = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/slide_command",qos);
   pub_cleaning_running_  = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/running",qos);
-
+    
 
   ua_->subscribe_int16(cfg_.nodes.speed, [this](int16_t v){
     std_msgs::msg::Int16 msg; 
     msg.data = v;
     pub_speed_->publish(msg);
   });
-  
-  
+   
   ua_->subscribe_bool(make_child_node(cfg_.structs.mod_root, "COBOT"), [this](bool v){
     std_msgs::msg::Bool msg; 
     msg.data = v;
     pub_cobot_->publish(msg);
   });
 
+  ua_->subscribe_double(make_child_node(cfg_.structs.workcell_status,"Slider_2_actual position-linear"),[this](double v){
+          std_msgs::msg::Float32 msg;
+          msg.data = static_cast<float>(v);
+          pub_cleaning_slider_actual_pos_->publish(msg);    
+          });
+
   //sensing
+  ua_->subscribe_double(make_child_node(cfg_.structs.workcell_status,"Slider_1_actual position-linear"),[this](double v){
+          std_msgs::msg::Float32 msg;
+          msg.data = static_cast<float>(v);   
+          pub_sensing_slider_actual_pos_->publish(msg);
+          });
 ua_->subscribe_bool(make_child_node(cfg_.structs.sensing_root, "robothome_safetransfer"), [this](bool v){
     std_msgs::msg::Bool msg; 
     msg.data = v;

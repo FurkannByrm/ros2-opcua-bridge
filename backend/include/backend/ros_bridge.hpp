@@ -4,8 +4,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <std_msgs/msg/detail/float32__struct.hpp>
 #include <std_msgs/msg/int16.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 #include <std_srvs/srv/set_bool.hpp>
 #include "backend/srv/set_int16.hpp"
@@ -24,6 +26,11 @@ private:
   UaConfig cfg_;
 
   rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr pub_speed_;
+    
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_sensing_slider_actual_pos_;
+  
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_cleaning_slider_actual_pos_;
+
 
   BoolPub  pub_cobot_;
   //sensing publishers
@@ -42,6 +49,7 @@ private:
   BoolPub pub_cleaning_slide_command_;
   BoolPub pub_cleaning_running_;
   
+
 
   rclcpp::Service<backend::srv::SetInt16>::SharedPtr srv_speed_set_;  
   BoolSrv srv_cobot_set_;
