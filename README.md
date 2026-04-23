@@ -1,48 +1,48 @@
-# Magician ROS 2 — Endüstriyel Robot Hücresi Kontrol Sistemi
+# Magician ROS 2 — Industrial Robot Cell Control System
 
-Endüstriyel bir robot hücresini (PLC, sensing/cleaning cobotları, slider mekanizmaları) ROS 2 üzerinden yönetmek için geliştirilmiş bir otomasyon yazılım sistemidir. OPC UA protokolü ile PLC'ye bağlanır, Qt5 tabanlı operatör arayüzü sunar ve BehaviorTree tabanlı robot orkestrasyon mantığı içerir.
+An automation software system for managing an industrial robot cell (PLC, sensing/cleaning cobots, slider mechanisms) over ROS 2. It connects to the PLC via the OPC UA protocol, provides a Qt5-based operator interface, and includes BehaviorTree-based robot orchestration logic.
 
-> Kurulum adımları için bkz. [INSTALLATION.md](INSTALLATION.md)
-
----
-
-## İçindekiler
-
-- [Sistem Mimarisi](#sistem-mimarisi)
-- [Paketler](#paketler)
-  - [backend — OPC UA ↔ ROS 2 Köprüsü](#backend--opc-ua--ros-2-köprüsü)
-  - [gui_app — Operatör Arayüzü](#gui_app--operatör-arayüzü)
-  - [demonstrator_tree — BehaviorTree Orkestrasyon](#demonstrator_tree--behaviortree-orkestrasyon)
-- [Sistemi Çalıştırma](#sistemi-çalıştırma)
-- [ROS 2 Arayüzleri](#ros-2-arayüzleri)
-- [OPC UA Adres Alanı](#opc-ua-adres-alanı)
-- [Kod Yapısı](#kod-yapısı)
-- [Hata Ayıklama](#hata-ayıklama)
+> For installation steps, see [INSTALLATION.md](INSTALLATION.md)
 
 ---
 
-## Sistem Mimarisi
+## Table of Contents
 
-Sistem üç ROS 2 paketinden oluşur ve katmanlı bir mimari izler:
+- [System Architecture](#system-architecture)
+- [Packages](#packages)
+  - [backend — OPC UA ↔ ROS 2 Bridge](#1-backend)
+  - [gui_app — Operator Interface](#2-gui_app)
+  - [demonstrator_tree — BehaviorTree Orchestration](#3-demonstrator_tree)
+- [Build and Run](#build-and-run)
+- [ROS 2 Interfaces](#ros-2-interfaces)
+- [OPC UA Address Space](#opc-ua-address-space)
+- [Repository Layout](#repository-layout)
+- [Debugging Tips](#debugging-tips)
+
+---
+
+## System Architecture
+
+The system consists of three ROS 2 packages and follows a layered architecture:
 
 ```
                         ┌───────────────────────────────────────────────────────────┐
-                        │                  Operatör Katmanı                        │
+                        │                    Operator Layer                         │
                         │                                                           │
                         │  ┌─────────────────────────────────────────────────────┐  │
                         │  │              gui_app  (Qt5 GUI)                     │  │
-                        │  │  Hız ayarı · Mod değiştirme · Robot kontrolleri    │  │
-                        │  │  Slider konumları · Gerçek zamanlı durum izleme    │  │
+                        │  │  Speed control · Mode switching · Robot controls   │  │
+                        │  │  Slider positions · Real-time status monitoring    │  │
                         │  └──────────────────────┬──────────────────────────────┘  │
-                        │                         │ ROS 2 Service Çağrıları         │
-                        │                         │ ROS 2 Topic Abonelikleri        │
+                        │                         │ ROS 2 Service Calls             │
+                        │                         │ ROS 2 Topic Subscriptions       │
                         └─────────────────────────┼────────────────────────────────┘
                                                   │
                         ┌─────────────────────────┼────────────────────────────────┐
-                        │              Haberleşme Katmanı                          │
+                        │              Communication Layer                         │
                         │                         │                                │
                         │  ┌──────────────────────▼──────────────────────────────┐  │
-                        │  │           backend  (opc_bridge düğümü)             │  │
+                        │  │           backend  (opc_bridge node)               │  │
                         │  │                                                     │  │
                         │  │  ┌─────────────┐   ┌────────────┐   ┌───────────┐  │  │
                         │  │  │ UaClient    │   │ RosBridge  │   │ Config    │  │  │
@@ -54,26 +54,26 @@ Sistem üç ROS 2 paketinden oluşur ve katmanlı bir mimari izler:
                         └────────────┼─────────────────────────────────────────────┘
                                      │
                         ┌────────────┼─────────────────────────────────────────────┐
-                        │  Saha      │  Katmanı                                    │
+                        │  Field     │  Layer                                      │
                         │            ▼                                              │
                         │  ┌──────────────────┐                                    │
-                        │  │   Siemens PLC     │ ← Gerçek üretim ortamı            │
-                        │  │  (veya test_server│   veya localhost simülasyonu       │
-                        │  │   simülasyonu)    │                                    │
+                        │  │   Siemens PLC     │ ← Real production environment      │
+                        │  │  (or test_server  │   or localhost simulation          │
+                        │  │   simulation)     │                                    │
                         │  └──────────────────┘                                    │
                         └──────────────────────────────────────────────────────────┘
 
                         ┌──────────────────────────────────────────────────────────┐
-                        │               Orkestrasyon Katmanı                       │
+                        │               Orchestration Layer                        │
                         │                                                          │
                         │  ┌────────────────────────────────────────────────────┐   │
                         │  │         demonstrator_tree  (BehaviorTree.CPP)      │   │
                         │  │                                                    │   │
                         │  │  Sequence                                          │   │
                         │  │  ├── Fallback                                      │   │
-                        │  │  │   ├── IsRobotAtHome  → joint_states kontrol     │   │
-                        │  │  │   └── CallHoming     → homing servis çağrısı    │   │
-                        │  │  └── CallOpcUI          → PLC'ye safe-transfer     │   │
+                        │  │  │   ├── IsRobotAtHome  → joint_states check       │   │
+                        │  │  │   └── CallHoming     → homing service call      │   │
+                        │  │  └── CallOpcUI          → safe-transfer to PLC     │   │
                         │  └────────────────────────────────────────────────────┘   │
                         │         │                              │                  │
                         │         │ /xbotcore/joint_states       │ /ros2_comm/      │
@@ -81,55 +81,13 @@ Sistem üç ROS 2 paketinden oluşur ve katmanlı bir mimari izler:
                         │         ▼                              ▼                  │
                         │  ┌──────────────┐           ┌──────────────────┐          │
                         │  │ Robot        │           │ backend          │          │
-                        │  │ Kontrolcüler │           │ (opc_bridge)     │          │
+                        │  │ Controllers  │           │ (opc_bridge)     │          │
                         │  │ (xbotcore)   │           │                  │          │
                         │  └──────────────┘           └──────────────────┘          │
                         └──────────────────────────────────────────────────────────┘
 ```
 
-### Veri Akışı
-
-```
-PLC ──(OPC UA subscription)──► UaClient ──(callback)──► RosBridge ──(publish)──► ROS 2 Topics ──► GUI / BT
-# Magician ROS 2 OPC UA Control System
-
-Magician is a ROS 2 workspace for supervising an industrial robot cell from ROS through OPC UA. It combines three packages:
-
-- `backend` — ROS 2 ↔ OPC UA bridge
-- `gui_app` — Qt5 operator panel
-- `demonstrator_tree` — BehaviorTree-based orchestration logic
-
-The project can run against a real PLC or against the built-in OPC UA test server for development.
-
-For setup instructions, see [INSTALLATION.md](INSTALLATION.md).
-
----
-
-## Overview
-
-The workspace is organized around a simple control loop:
-
-1. `backend` subscribes to PLC variables through OPC UA.
-2. `backend` republishes them as ROS 2 topics.
-3. The GUI and automation tree consume those topics.
-4. GUI actions and BehaviorTree actions call ROS 2 services.
-5. `backend` translates those service requests into OPC UA writes.
-
-### High-level architecture
-
-```text
-PLC / OPC UA test server
-        │
-        ▼
-backend (open62541 + rclcpp)
-        ├── publishes ROS 2 topics
-        └── exposes ROS 2 services
-             │
-             ├── gui_app (Qt5 operator interface)
-             └── demonstrator_tree (BehaviorTree.CPP automation)
-```
-
-### Data flow
+### Data Flow
 
 ```text
 PLC --OPC UA subscription--> UaClient --> RosBridge --> ROS 2 topics --> GUI / BT
@@ -139,7 +97,7 @@ BT  --ROS 2 service--------> RosBridge --> UaClient --> OPC UA write --> PLC
 
 ---
 
-## Workspace packages
+## Packages
 
 ### 1. `backend`
 
@@ -272,7 +230,7 @@ cobot2:
 
 ---
 
-## ROS 2 interfaces
+## ROS 2 Interfaces
 
 ### Published topics
 
@@ -336,7 +294,7 @@ string message
 
 ---
 
-## OPC UA address space
+## OPC UA Address Space
 
 The test server reproduces the PLC structure under namespace `ns=3`:
 
@@ -386,7 +344,7 @@ Objects/
 
 ---
 
-## Build and run
+## Build and Run
 
 ### Build
 
@@ -441,7 +399,7 @@ If you want to test only the tree logic, provide matching joint-state publishers
 
 ---
 
-## Repository layout
+## Repository Layout
 
 ```text
 magician_ws/src/
@@ -467,7 +425,7 @@ magician_ws/src/
 
 ---
 
-## Debugging tips
+## Debugging Tips
 
 ```bash
 # ROS 2 interfaces
