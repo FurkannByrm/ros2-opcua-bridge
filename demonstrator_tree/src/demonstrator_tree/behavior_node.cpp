@@ -12,21 +12,21 @@ MagicianSubNode::MagicianSubNode(const std::string& node_name, const CobotConfig
     robot_home_status_.try_emplace(robot1,false,cfg_.sensing_group.sensing_home_vec);
     robot_home_status_.try_emplace(robot2,false,cfg_.cleaning_group.cleaning_home_vec);
 
-    sensing_home_axis_pos_ = create_subscription<sensor_msgs::msg::JointState>
+    sensing_home_axis_pos_ = create_subscription<xbot_msgs::msg::JointState>
     (cfg_.sensing_group.sensing_joint_states,10,
-        [this,robot1](const sensor_msgs::msg::JointState::ConstSharedPtr& msg){
+        [this,robot1](const xbot_msgs::msg::JointState::ConstSharedPtr& msg){
             homePosCallback(msg,robot1);
         });
-    cleaning_home_axis_pos_= create_subscription<sensor_msgs::msg::JointState>
+    cleaning_home_axis_pos_= create_subscription<xbot_msgs::msg::JointState>
     (cfg_.cleaning_group.cleaning_joint_states,10,
-            [this, robot2](const sensor_msgs::msg::JointState::ConstSharedPtr& msg){
+            [this, robot2](const xbot_msgs::msg::JointState::ConstSharedPtr& msg){
             homePosCallback(msg,robot2);
         });
     RCLCPP_INFO(get_logger(), " Magician Subscribers initialized");
 }
 
 
-void MagicianSubNode::homePosCallback(const sensor_msgs::msg::JointState::ConstSharedPtr& msg, const std::string& robot_id){
+void MagicianSubNode::homePosCallback(const xbot_msgs::msg::JointState::ConstSharedPtr& msg, const std::string& robot_id){
 
     auto home_pos_vec   = robot_home_status_[robot_id].second; 
 
@@ -35,7 +35,7 @@ void MagicianSubNode::homePosCallback(const sensor_msgs::msg::JointState::ConstS
     for(size_t i = 0; i<home_pos_vec.size(); i++)
     {   
             auto target = home_pos_vec[i];       
-            auto current = msg->position[i];
+            auto current = msg->link_position[i];
             
             if(std::fabs(target - current) > JOINT_TOL){
                 

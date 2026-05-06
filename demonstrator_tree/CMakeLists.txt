@@ -12,7 +12,8 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
-
+find_package(xbot_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 include_directories(include)
 add_executable(demo src/main.cpp 
@@ -29,7 +30,9 @@ set(TARGET_DEPENDS
   rclcpp
   sensor_msgs
   std_srvs
+  xbot_msgs
   behaviortree_cpp
+  ament_index_cpp
 )
 
 

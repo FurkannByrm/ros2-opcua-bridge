@@ -20,6 +20,7 @@ It covers:
 | C++ | C++17 |
 | Build system | `colcon`, `cmake` |
 | OPC UA library | `open62541` >= 1.4 |
+| Robot middleware | XBot2 (installed at `/opt/xbot`) |
 
 Recommended minimum hardware:
 
@@ -99,6 +100,37 @@ sudo apt install -y \
 
 ---
 
+## 4.1 Install XBot2
+
+The `demonstrator_tree` package subscribes to `xbot_msgs/msg/JointState` topics published by XBot2 robot controllers. XBot2 must be installed and its environment sourced before building.
+
+XBot2 is installed system-wide under `/opt/xbot`. Headers used by this project live at:
+
+```text
+/opt/xbot/include/xbot_msgs/xbot_msgs/msg/
+  joint_state.hpp   ← used by demonstrator_tree
+  joint_command.hpp
+  fault.hpp
+  ...
+```
+
+Source the XBot2 environment before building or running:
+
+```bash
+source /opt/xbot/setup.sh
+```
+
+Add it permanently to your shell:
+
+```bash
+grep -qxF 'source /opt/xbot/setup.sh' ~/.bashrc \
+  || echo 'source /opt/xbot/setup.sh' >> ~/.bashrc
+```
+
+> **Note — message type adaptability:** `demonstrator_tree` currently uses `xbot_msgs::msg::JointState` to read robot joint positions. If your robot stack does not use XBot2, you can replace this dependency with any other joint-state message type (e.g., `sensor_msgs/msg/JointState` from standard ROS 2). The only files that need to change are `include/demonstrator_tree/behavior_node.hpp` and `src/demonstrator_tree/behavior_node.cpp` — update the include, the subscription type, and the field name used to read link positions. The `CMakeLists.txt` and `package.xml` dependency entries for `xbot_msgs` must be updated to match the new package.
+
+---
+
 ## 5. Install `open62541`
 
 The `backend` package uses `find_package(open62541 REQUIRED)`, so `open62541` must be installed system-wide.
@@ -170,9 +202,12 @@ Expected structure:
 
 ## 7. Build the workspace
 
+Source both ROS 2 and XBot2 before building:
+
 ```bash
 cd ~/magician_ws
 source /opt/ros/humble/setup.bash
+source /opt/xbot/setup.sh
 colcon build
 source install/setup.bash
 ```
@@ -226,21 +261,23 @@ Files:
 
 ### 8.2 BehaviorTree config
 
-The current `demonstrator_tree/config/parameters.yaml` is configured for these interfaces:
+The current `demonstrator_tree/config/parameters.yaml` is configured for XBot2 interfaces:
 
 ```yaml
 cobot1:
   robot_name: "sensing_cobot"
-  sensing_joint_states: "/sensing/joint_states"
-  sensing_service: "/sensing/go_home"
+  sensing_joint_states: "/sr/xbotcore/joint_states"
+  sensing_service: "/sr/xbotcore/homing/switch"
+  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
 
 cobot2:
   robot_name: "cleaning_cobot"
-  cleaning_joint_states: "/cleaning/joint_states"
-  cleaning_service: "/cleaning/go_home"
+  cleaning_joint_states: "/cr/xbotcore/joint_states"
+  cleaning_service: "/cr/xbotcore/homing/switch"
+  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
 ```
 
-If your robot stack uses different topic or service names, update this file before running `demonstrator_tree`.
+The topic names (`/sr/xbotcore/joint_states`, `/cr/xbotcore/joint_states`) and service names (`/sr/xbotcore/homing/switch`, `/cr/xbotcore/homing/switch`) are the default XBot2 interfaces. If your XBot2 instance uses different namespaces, or if you are using a different robot middleware entirely, update `parameters.yaml` accordingly.
 
 > Note: the `demo` executable currently loads its XML and YAML using workspace absolute paths, so keep the repository at the expected workspace location or update the source accordingly.
 

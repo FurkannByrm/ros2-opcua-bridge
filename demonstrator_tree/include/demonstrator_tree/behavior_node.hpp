@@ -2,7 +2,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/set_bool.hpp>
-#include <sensor_msgs/msg/joint_state.hpp> // ->you have to change this message type with xbot_msgs format
+#include <xbot_msgs/msg/joint_state.hpp> // ->you have to change this message type with xbot_msgs format
 #include <utility>
 
 #include "behaviortree_cpp/bt_factory.h"
@@ -44,14 +44,14 @@ namespace DemostratorTree{
         
         private:        
         
-        void homePosCallback(const sensor_msgs::msg::JointState::ConstSharedPtr& msg, const std::string& robot_id);
+        void homePosCallback(const xbot_msgs::msg::JointState::ConstSharedPtr& msg, const std::string& robot_id);
 
         const double JOINT_TOL = 0.01;
         CobotConfig cfg_;
         static  inline std::map<std::string, std::pair<bool, std::vector<double>>> robot_home_status_;
         
-        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sensing_home_axis_pos_;
-        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr cleaning_home_axis_pos_;
+        rclcpp::Subscription<xbot_msgs::msg::JointState>::SharedPtr sensing_home_axis_pos_;
+        rclcpp::Subscription<xbot_msgs::msg::JointState>::SharedPtr cleaning_home_axis_pos_;
 
 
     };

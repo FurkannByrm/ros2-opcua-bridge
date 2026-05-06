@@ -1,11 +1,12 @@
 cobot1:
   robot_name: "sensing_cobot"
-  sensing_joint_states: "/sensing/joint_states"
-  sensing_service: "/sensing/go_home" 
-  home_position: [0.0, 0.0, 0.0, 0.0, 0.0, 0,0]
+  sensing_joint_states: "/sr/xbotcore/joint_states"
+  sensing_service: "/sr/xbotcore/homing/switch" 
+  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0,005]
 
 cobot2: 
   robot_name: "cleaning_cobot"
-  cleaning_joint_states: "/cleaning/joint_states"
-  cleaning_service: "/cleaning/go_home"
-  home_position: [0.0, 0.0, 0.0, 0.0, 0.0, 0,0]
+  cleaning_joint_states: "/cr/xbotcore/joint_states"
+  cleaning_service: "/cr/xbotcore/homing/switch"
+  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0,005]
+  

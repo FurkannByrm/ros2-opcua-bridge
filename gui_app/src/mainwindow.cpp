@@ -144,7 +144,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }"
   );
   auto *cobotLayout = new QVBoxLayout(cobotGroup);
-  btnCobotToggle_ = createToggleButton("COBOT");
+  btnCobotToggle_ = createToggleButton("COBOT CONNECTION");
   cobotLayout->addWidget(btnCobotToggle_);
   mainLayout->addWidget(cobotGroup);
   

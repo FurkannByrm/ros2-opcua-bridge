@@ -76,13 +76,14 @@ The system consists of three ROS 2 packages and follows a layered architecture:
                         │  │  └── CallOpcUI          → safe-transfer to PLC     │   │
                         │  └────────────────────────────────────────────────────┘   │
                         │         │                              │                  │
-                        │         │ /xbotcore/joint_states       │ /ros2_comm/      │
-                        │         │ /xbotcore/homing/switch*     │ safetransfer_set │
+                        │         │ /sr|cr/xbotcore/joint_states │ /ros2_comm/      │
+                        │         │ /sr|cr/xbotcore/homing/switch│ safetransfer_set │
                         │         ▼                              ▼                  │
                         │  ┌──────────────┐           ┌──────────────────┐          │
                         │  │ Robot        │           │ backend          │          │
                         │  │ Controllers  │           │ (opc_bridge)     │          │
-                        │  │ (xbotcore)   │           │                  │          │
+                        │  │ (XBot2 /     │           │                  │          │
+                        │  │  xbotcore)   │           │                  │          │
                         │  └──────────────┘           └──────────────────┘          │
                         └──────────────────────────────────────────────────────────┘
 ```
@@ -212,19 +213,25 @@ It provides:
 
 #### Current BehaviorTree config
 
-The active `parameters.yaml` expects these external robot interfaces:
+The active `parameters.yaml` is configured for the XBot2 interfaces exposed by the sensing and cleaning cobots:
 
 ```yaml
 cobot1:
   robot_name: "sensing_cobot"
-  sensing_joint_states: "/sensing/joint_states"
-  sensing_service: "/sensing/go_home"
+  sensing_joint_states: "/sr/xbotcore/joint_states"
+  sensing_service: "/sr/xbotcore/homing/switch"
+  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
 
 cobot2:
   robot_name: "cleaning_cobot"
-  cleaning_joint_states: "/cleaning/joint_states"
-  cleaning_service: "/cleaning/go_home"
+  cleaning_joint_states: "/cr/xbotcore/joint_states"
+  cleaning_service: "/cr/xbotcore/homing/switch"
+  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
 ```
+
+Topic and service names follow XBot2 conventions (`/sr/xbotcore/...` for the sensing robot, `/cr/xbotcore/...` for the cleaning robot). Update `parameters.yaml` if your XBot2 namespaces differ.
+
+> **Message type adaptability:** `demonstrator_tree` currently subscribes using `xbot_msgs::msg::JointState` (from XBot2, installed at `/opt/xbot`). This can be replaced with any compatible joint-state message type — for example `sensor_msgs/msg/JointState` — by updating the include and subscription type in `behavior_node.hpp` / `behavior_node.cpp` and adjusting the `CMakeLists.txt` and `package.xml` dependencies accordingly.
 
 > Note: the executable currently loads `parameters.yaml` and `bt_tree.xml` through absolute paths inside the workspace, so the package is intended to run from this workspace layout as-is.
 
@@ -351,6 +358,7 @@ Objects/
 ```bash
 cd ~/magician_ws
 source /opt/ros/humble/setup.bash
+source /opt/xbot/setup.sh
 colcon build
 source install/setup.bash
 ```
@@ -395,7 +403,7 @@ ros2 run gui_app gui_node
 
 ### BehaviorTree test
 
-If you want to test only the tree logic, provide matching joint-state publishers and homing services, or adapt `demonstrator_tree/config/parameters.yaml` to your own robot stack.
+If you want to test only the tree logic, provide matching joint-state publishers and homing services, or adapt `demonstrator_tree/config/parameters.yaml` to your own robot stack. The joint-state topics must publish `xbot_msgs/msg/JointState` by default; if you use a different middleware, update the subscription type in `behavior_node.hpp` and `behavior_node.cpp` first.
 
 ---
 
@@ -458,6 +466,7 @@ ros2 service call /ros2_comm/slider1/go_pos std_srvs/srv/SetBool "{data: true}"
 | OPC UA library | open62541 >= 1.4 |
 | BehaviorTree | `ros-humble-behaviortree-cpp` |
 | YAML | `libyaml-cpp-dev` |
+| Robot middleware | XBot2 (`/opt/xbot`) |
 
 For full installation steps, see [INSTALLATION.md](INSTALLATION.md).
 

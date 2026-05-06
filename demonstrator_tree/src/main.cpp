@@ -1,14 +1,15 @@
 #include "demonstrator_tree/behavior_node.hpp"
-#include <chrono>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <rclcpp/executors/single_threaded_executor.hpp>
 #include <rclcpp/timer.hpp>
-#include <thread>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 int main(int argc, char **argv){
 
-auto cfg = ConfigLoader::load_file("/home/furkan/magician_ws/src/demonstrator_tree/config/parameters.yaml");
+auto pkg_path = ament_index_cpp::get_package_share_directory("demonstrator_tree");
+
+auto cfg = ConfigLoader::load_file( pkg_path + "/config/parameters.yaml");
 rclcpp::init(argc,argv);    
 auto subNode = std::make_shared<DemostratorTree::MagicianSubNode>("home_check_node",cfg);
 auto clientHoming = std::make_shared<DemostratorTree::MagicianClientNode>("homing_node",cfg);
@@ -53,7 +54,7 @@ BT::BehaviorTreeFactory factory;
 factory.registerSimpleAction("IsRobotAtHome", [&](BT::TreeNode&){return subNode->checkPos();});
 factory.registerSimpleAction("CallHoming",[&](BT::TreeNode&){return clientHoming->homingCall();});
 factory.registerSimpleAction("CallOpcUI",[&](BT::TreeNode&){return clientOpcUa->OpcServiceCall();});
-auto tree =factory.createTreeFromFile("/home/furkan/magician_ws/src/demonstrator_tree/config/bt_tree.xml");
+auto tree =factory.createTreeFromFile( pkg_path + "/config/bt_tree.xml");
 tree.tickWhileRunning();
 
 rclcpp::shutdown();
