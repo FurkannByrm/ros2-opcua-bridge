@@ -1,8 +1,6 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include <fstream>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -19,28 +17,19 @@ struct TimingCfg {
 
 };
 
-struct NodesCfg {
-    std::string status, mode, speed, command, slider1_go, slider2_go;
-};
-
 struct StructsCfg{
-    std::string mod_root, stat_root, sensing_root, cleaning_root, workcell_status;
-    bool discover;
+    std::string mod_root, stat_root, sensing_root, cleaning_root, workcell_status, spot_M1_root, spot_M2_root;
     std::vector<std::string> spatter1_vec;
     std::vector<std::string> spatter2_vec;
-
-    std::vector<std::string> mod_fields;
-    std::vector<std::string> stat_fields;
+    std::vector<std::string> spatter_size;
 };
 
 struct UaConfig{
     std::string endpoint;
     int ns_index;
-    NodesCfg nodes;
     StructsCfg structs;
     TimingCfg timing;
 };
-
 
 class ConfigLoader{
 

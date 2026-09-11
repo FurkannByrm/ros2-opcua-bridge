@@ -5,7 +5,7 @@
 #include <open62541/client_subscriptions.h>
 #include <open62541/client_config_default.h>
 
-#include "backend/config.hpp"
+#include "opcua_to_ros2/config.hpp"
 
 #include <functional>
 #include <thread>

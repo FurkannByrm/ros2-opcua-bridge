@@ -7,7 +7,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
-find_package(backend REQUIRED)
+find_package(opcua_to_ros2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
@@ -28,7 +28,7 @@ add_executable(gui_node ${SOURCES} ${HEADERS})
 
 
 target_link_libraries(gui_node Qt5::Widgets)
-ament_target_dependencies(gui_node rclcpp std_msgs std_srvs backend)
+ament_target_dependencies(gui_node rclcpp std_msgs std_srvs opcua_to_ros2)
 
 install(TARGETS gui_node DESTINATION lib/${PROJECT_NAME})
 

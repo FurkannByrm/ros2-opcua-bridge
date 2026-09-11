@@ -20,7 +20,7 @@ from launch.actions import TimerAction
 def generate_launch_description():
 
     opc_bridge = Node(
-        package='backend',
+        package='opcua_to_ros2',
         executable='opc_bridge',
         name='opc_bridge',
         output='screen',

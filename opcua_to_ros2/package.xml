@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>backend</name>
+  <name>opcua_to_ros2</name>
   <version>0.0.0</version>
   <description>ROS 2 OPC UA Bridge Backend</description>
   <maintainer email="frknbyrm05@gmail.com">cengo</maintainer>

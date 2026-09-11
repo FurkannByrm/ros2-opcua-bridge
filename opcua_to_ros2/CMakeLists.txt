@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(backend)
+project(opcua_to_ros2)
 
 # C++ Standard
 set(CMAKE_CXX_STANDARD 17)
@@ -20,6 +20,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Welding.msg"
   "srv/SetInt16.srv"
   "srv/SetFloat32.srv"
   "srv/GetSpotWeights.srv"
@@ -36,7 +37,7 @@ find_package(open62541 REQUIRED)
 add_executable(opc_bridge src/main.cpp
                     src/opcua_client.cpp
                     src/config.cpp
-                    src/ros_bridge.cpp
+                    src/magician_demonstrator.cpp
               )
 
 
@@ -58,17 +59,6 @@ ament_target_dependencies(opc_bridge
 rosidl_target_interfaces(opc_bridge
 ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
-
-# ── Test OPC UA Server (simulates PLC for development) ──
-add_executable(test_server test/test_server.cpp)
-target_link_libraries(test_server
-  open62541::open62541
-  Threads::Threads
-)
-
-install(TARGETS test_server
-    DESTINATION lib/${PROJECT_NAME}
-  )
 
 install(TARGETS opc_bridge
 DESTINATION lib/${PROJECT_NAME}
