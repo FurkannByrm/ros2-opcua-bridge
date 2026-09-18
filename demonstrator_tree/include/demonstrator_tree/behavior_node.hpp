@@ -6,7 +6,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include <std_srvs/srv/detail/set_bool__struct.hpp>
 #include <std_srvs/srv/set_bool.hpp>
 #include <xbot_msgs/msg/joint_state.hpp> 
 
@@ -153,7 +152,7 @@ namespace DemostratorTree{
         std::unordered_map<std::string, bool> system_operation_mode_;
         std::unordered_map<std::string,bool> carbody_location_;  
         std::unordered_map<std::string,bool> robot_activation_status_; 
-
+        
         rclcpp::Subscription<xbot_msgs::msg::JointState>::SharedPtr sensing_home_axis_pos_;
         rclcpp::Subscription<xbot_msgs::msg::JointState>::SharedPtr cleaning_home_axis_pos_;
 

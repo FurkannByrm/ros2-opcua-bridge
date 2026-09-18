@@ -2,7 +2,7 @@ cobot1:
   robot_name: "sensing_cobot"
   sensing_joint_states: "/sr/xbotcore/joint_states"
   sensing_service: "/sr/xbotcore/homing/switch" 
-  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0,005]
+  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
   target_position: [0.002013,-0.53907,-1.23233,1.57542,1.38901,-0.00119]
 
 cobot2: 

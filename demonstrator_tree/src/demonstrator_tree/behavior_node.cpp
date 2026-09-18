@@ -1,6 +1,4 @@
 #include "demonstrator_tree/behavior_node.hpp"
-#include <memory>
-#include <std_srvs/srv/detail/set_bool__struct.hpp>
 
 using namespace DemostratorTree;
 
