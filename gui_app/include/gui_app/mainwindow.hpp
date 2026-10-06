@@ -33,8 +33,8 @@ private:
   BoolClient       cli_sensing_touch_finished_;
   BoolClient       cli_sensing_active_;
   BoolClient       cli_sensing_touch_active_;
-  BoolClient       cli_sensing_running_;
   BoolClient       cli_sensing_carbody_located_st_;  
+  BoolClient       cli_sensing_running_;
   BoolClient       cli_sensing_pos2_st_;  
   BoolClient       cli_sensing_pos3_st_;  
   BoolClient       cli_sensing_pos4_st_;  
@@ -45,8 +45,8 @@ private:
   BoolClient       cli_cleaning_safetransfer_;
   BoolClient       cli_cleaning_finished_;
   BoolClient       cli_cleaning_active_;
-  BoolClient       cli_cleaning_running_;
   BoolClient       cli_cleaning_carbody_located_st_;
+  BoolClient       cli_cleaning_running_;
   BoolClient       cli_cleaning_pos2_st_;  
   BoolClient       cli_cleaning_pos3_st_;  
   BoolClient       cli_cleaning_pos4_st_;  
@@ -63,8 +63,8 @@ private:
   BoolSubscription   sub_sensing_touch_finished_;
   BoolSubscription   sub_sensing_active_;
   BoolSubscription   sub_sensing_touch_active_;
-  BoolSubscription   sub_sensing_running_;
   BoolSubscription   sub_sensing_carbody_located_st_;
+  BoolSubscription   sub_sensing_running_;
   BoolSubscription   sub_sensing_pos2_st_;
   BoolSubscription   sub_sensing_pos3_st_;
   BoolSubscription   sub_sensing_pos4_st_;
@@ -75,8 +75,8 @@ private:
   BoolSubscription   sub_cleaning_safetransfer_;
   BoolSubscription   sub_cleaning_finished_;
   BoolSubscription   sub_cleaning_active_;
-  BoolSubscription   sub_cleaning_running_;
   BoolSubscription   sub_cleaning_carbody_located_st_;
+  BoolSubscription   sub_cleaning_running_;
   BoolSubscription   sub_cleaning_pos2_st_;
   BoolSubscription   sub_cleaning_pos3_st_;
   BoolSubscription   sub_cleaning_pos4_st_;

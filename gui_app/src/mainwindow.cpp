@@ -157,22 +157,22 @@ leftLayout->addWidget(slidersGroup);
   sensingLayout->setSpacing(4);
   btnSensingCarbodyLocatedSt_    = createToggleButton("Carbody Located");
   btnSensingSafeTransferToggle_  = createToggleButton("Robot Home");
-  btnSensingFinishedToggle_      = createToggleButton("Sensing Finished");
-  btnSensingTouchFinishedToggle_ = createToggleButton("Touch Finished");
   btnSensingActiveToggle_        = createToggleButton("Sensing Active");
   btnSensingTouchActiveToggle_   = createToggleButton("Touch Active");
-  btnSensingRunningToggle_       = createToggleButton("Running");
-  btnSensingPos2Toggle_          = createToggleButton("Position 2"); 
-  btnSensingPos3Toggle_          = createToggleButton("Position 3");
-  btnSensingPos4Toggle_          = createToggleButton("Position 4");
-  btnSensingPos5Toggle_          = createToggleButton("Position 5");
+  btnSensingRunningToggle_       = createToggleButton("Slider Position1");
+  btnSensingFinishedToggle_      = createToggleButton("Slider Position2");
+  btnSensingTouchFinishedToggle_ = createToggleButton("Slider Position2+");
+  btnSensingPos2Toggle_          = createToggleButton("Slider Position3"); 
+  btnSensingPos3Toggle_          = createToggleButton("Slider Position4");
+  btnSensingPos4Toggle_          = createToggleButton("Slider Position5");
+  btnSensingPos5Toggle_          = createToggleButton("Slider Position6");
   sensingLayout->addWidget(btnSensingSafeTransferToggle_,    0, 0);
-  sensingLayout->addWidget(btnSensingFinishedToggle_,        0, 1);
-  sensingLayout->addWidget(btnSensingTouchFinishedToggle_,   1, 0);
+  sensingLayout->addWidget(btnSensingFinishedToggle_,        3, 1);
+  sensingLayout->addWidget(btnSensingTouchFinishedToggle_,   3, 0);
   sensingLayout->addWidget(btnSensingActiveToggle_,          1, 1);
-  sensingLayout->addWidget(btnSensingTouchActiveToggle_,     2, 0); 
-  sensingLayout->addWidget(btnSensingCarbodyLocatedSt_,      2, 1);
-  sensingLayout->addWidget(btnSensingRunningToggle_,         3, 0);
+  sensingLayout->addWidget(btnSensingTouchActiveToggle_,     1, 0); 
+  sensingLayout->addWidget(btnSensingCarbodyLocatedSt_,      0, 1);
+  sensingLayout->addWidget(btnSensingRunningToggle_,         2, 0);
   sensingLayout->addWidget(btnSensingPos2Toggle_,            4, 0);
   sensingLayout->addWidget(btnSensingPos3Toggle_,            4, 1);
   sensingLayout->addWidget(btnSensingPos4Toggle_,            5, 0);
@@ -185,17 +185,17 @@ leftLayout->addWidget(slidersGroup);
   cleaningLayout->setSpacing(4);
   btnCleaningCarbodyLocatedSt_   = createToggleButton("Carbody Located");
   btnCleaningSafeTransferToggle_ = createToggleButton("Robot Home");
-  btnCleaningFinishedToggle_     = createToggleButton("Cleaning Finished");
   btnCleaningActiveToggle_       = createToggleButton("Cleaning Active");
-  btnCleaningRunningToggle_      = createToggleButton("Running");
-  btnCleaningPos2Toggle_          = createToggleButton("Position 2"); 
-  btnCleaningPos3Toggle_          = createToggleButton("Position 3");
-  btnCleaningPos4Toggle_          = createToggleButton("Position 4");
-  btnCleaningPos5Toggle_          = createToggleButton("Position 5");
+  btnCleaningRunningToggle_      = createToggleButton("Slider Position1");
+  btnCleaningFinishedToggle_     = createToggleButton("Slider Position2");
+  btnCleaningPos2Toggle_          = createToggleButton("Slider Position3"); 
+  btnCleaningPos3Toggle_          = createToggleButton("Slider Position4");
+  btnCleaningPos4Toggle_          = createToggleButton("Slider Position4");
+  btnCleaningPos5Toggle_          = createToggleButton("Slider Position5");
   cleaningLayout->addWidget(btnCleaningSafeTransferToggle_,  0, 0);
-  cleaningLayout->addWidget(btnCleaningFinishedToggle_,      0, 1);
+  cleaningLayout->addWidget(btnCleaningFinishedToggle_,      2, 1);
   cleaningLayout->addWidget(btnCleaningActiveToggle_,        1, 0);
-  cleaningLayout->addWidget(btnCleaningCarbodyLocatedSt_,    1, 1);
+  cleaningLayout->addWidget(btnCleaningCarbodyLocatedSt_,    0, 1);
   cleaningLayout->addWidget(btnCleaningRunningToggle_,       2, 0);
   cleaningLayout->addWidget(btnCleaningPos2Toggle_,          3, 0); 
   cleaningLayout->addWidget(btnCleaningPos3Toggle_,          3, 1);
@@ -380,16 +380,16 @@ void MainWindow::setup_ros() {
 
   cli_sensing_carbody_located_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/carbody_located_set");
   cli_sensing_safetransfer_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/safetransfer_set");
-  cli_sensing_finished_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/finished_set");
-  cli_sensing_touch_finished_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/touch_finished_set");
   cli_sensing_active_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/active_set");
   cli_sensing_touch_active_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/touch_active_set");
-  cli_sensing_running_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/running");
+  cli_sensing_running_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/go_slider_pos1");
 
- cli_sensing_pos2_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/pos2_set"); 
- cli_sensing_pos3_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/pos3_set");
- cli_sensing_pos4_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/pos4_set");
- cli_sensing_pos5_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/pos5_set");
+  cli_sensing_finished_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/go_slider_pos2");
+  cli_sensing_touch_finished_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/t_go_slider_pos2");
+ cli_sensing_pos2_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/go_slider_pos3"); 
+ cli_sensing_pos3_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/go_slider_pos4");
+ cli_sensing_pos4_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/go_slider_pos5");
+ cli_sensing_pos5_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/sensing/go_slider_pos6");
 
 
 
@@ -398,14 +398,13 @@ void MainWindow::setup_ros() {
 
   cli_cleaning_carbody_located_st_= node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/carbody_located_set");
   cli_cleaning_safetransfer_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/safetransfer_set");
-  cli_cleaning_finished_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/cleaning_finished_set");
   cli_cleaning_active_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/cleaning_active_set");
-  cli_cleaning_running_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/running_set");
-
-  cli_cleaning_pos2_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/pos2_set");
-  cli_cleaning_pos3_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/pos3_set");
-  cli_cleaning_pos4_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/pos4_set");
-  cli_cleaning_pos5_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/pos5_set");
+  cli_cleaning_running_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/go_slider_pos1");
+  cli_cleaning_finished_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/go_slider_pos2");
+  cli_cleaning_pos2_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/go_slider_pos3");
+  cli_cleaning_pos3_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/go_slider_pos4");
+  cli_cleaning_pos4_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/go_slider_pos5");
+  cli_cleaning_pos5_st_ = node_->create_client<std_srvs::srv::SetBool>("/ros2_comm/cleaning/go_slider_pos6");
   
   sub_cobot_mode_ = node_->create_subscription<std_msgs::msg::Bool>(
     "/ros2_comm/mod/cobot", common_qos_.reliable(),
@@ -495,7 +494,7 @@ void MainWindow::setup_ros() {
   
   
   sub_sensing_running_ = node_->create_subscription<std_msgs::msg::Bool>(
-    "/ros2_comm/sensing/running",sensing_and_cleaning_qos_.best_effort(),
+    "/ros2_comm/sensing/pos1_is_ready",sensing_and_cleaning_qos_.best_effort(),
     [this](const std_msgs::msg::Bool::SharedPtr msg){
       QMetaObject::invokeMethod(this, [this, state=msg->data](){
         btnSensingRunningToggle_->blockSignals(true);
