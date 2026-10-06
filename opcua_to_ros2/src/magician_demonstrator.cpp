@@ -496,7 +496,7 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
           res->message = std::string("go slider pos2 set to ") + (req->data ? "true" : "false");
           });
 
-    srv_cleaning_go_slider_pos2_ = create_service<std_srvs::srv::SetBool>(
+    srv_cleaning_go_slider_pos3_ = create_service<std_srvs::srv::SetBool>(
     "/ros2_comm/cleaning/go_slider_pos3",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
@@ -506,7 +506,7 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
       });
 
 
-    srv_cleaning_go_slider_pos3_ = create_service<std_srvs::srv::SetBool>(
+    srv_cleaning_go_slider_pos4_ = create_service<std_srvs::srv::SetBool>(
     "/ros2_comm/cleaning/go_slider_pos4",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
@@ -516,7 +516,7 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
       });
 
 
-    srv_cleaning_go_slider_pos4_ = create_service<std_srvs::srv::SetBool>(
+    srv_cleaning_go_slider_pos5_ = create_service<std_srvs::srv::SetBool>(
     "/ros2_comm/cleaning/go_slider_pos5",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
@@ -526,7 +526,7 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
       });
 
 
-    srv_cleaning_go_slider_pos5_ = create_service<std_srvs::srv::SetBool>(
+    srv_cleaning_go_slider_pos6_ = create_service<std_srvs::srv::SetBool>(
     "/ros2_comm/cleaning/go_slider_pos6",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
