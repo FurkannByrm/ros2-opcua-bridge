@@ -13,7 +13,7 @@ An automation software system for managing an industrial robot cell (PLC, sensin
 
   * [opcua_to_ros2 — OPC UA ↔ ROS 2 Bridge](#1-opcua_to_ros2)
   * [gui_app — Operator Interface](#2-gui_app)
-  * [demonstrator_tree — BehaviorTree Orchestration](#3-demonstrator_tree)
+  * [bt-ros2-bridge — BehaviorTree Orchestration](#3-bt-ros2-bridge)
 * [Build and Run](#build-and-run)
 * [ROS 2 Interfaces](#ros-2-interfaces)
 * [OPC UA Address Space](#opc-ua-address-space)
@@ -60,7 +60,7 @@ The system consists of three ROS 2 packages and follows a layered architecture:
                          │  Field     │  Layer                                      │
                          │            ▼                                             │
                          │  ┌──────────────────┐                                    │
-                         │  │   Siemens PLC     │ ← Real production environment     │
+                         │  │   Siemens PLC    │ ← Real production environment      │
                          │  └──────────────────┘                                    │
                          └──────────────────────────────────────────────────────────┘
 
@@ -68,24 +68,29 @@ The system consists of three ROS 2 packages and follows a layered architecture:
                          │               Orchestration Layer                        │
                          │                                                          │
                          │  ┌────────────────────────────────────────────────────┐  │
-                         │  │         demonstrator_tree  (BehaviorTree.CPP)      │  │
+                         │  │         bt-ros2-bridge     (BehaviorTree.CPP)      │  │
                          │  │                                                    │  │
-                         │  │  Sequence                                          │  │
-                         │  │  ├── Fallback                                      │  │
-                         │  │  │   ├── IsRobotAtHome  → joint_states check       │  │
-                         │  │  │   └── CallHoming     → homing service call      │  │
-                         │  │  └── CallOpcUI          → safe-transfer to PLC     │  │
+                         │  │  MainSequence                                      │  │
+                         │  │  ├── WaitForSignal  → creation sub and client req  │  │
+                         │  │  │                         as dinamicaly           │  │
+                         │  │  └── ClientReq          → PLC operations           │  │
                          │  └────────────────────────────────────────────────────┘  │
-                         │         │                              │                 │
-                         │         │ /sr|cr/xbotcore/joint_states │ /ros2_comm/     │
-                         │         │ /sr|cr/xbotcore/homing/switch│ safetransfer_set│
-                         │         ▼                              ▼                 │
-                         │  ┌──────────────┐           ┌──────────────────┐         │
-                         │  │ Robot        │           │ opcua_to_ros2    │         │
-                         │  │ Controllers  │           │ (opc_bridge)     │         │
-                         │  │ (XBot2 /     │           │                  │         │
-                         │  │  xbotcore)   │           │                  │         │
-                         │  └──────────────┘           └──────────────────┘         │
+                         │         │                                    │           │
+                         │         │                                    │           │
+                         │         │ /ros2_comm/sensing/running         │           │
+                         │         │ expected_value:"true"              │           │
+                         │         │ timeout="200.0"                    │           │
+                         │         │                                    │           │
+                         │         │ /xbotcore/homing/ergodic/homing    │           │
+                         │         │ request_payload:"true"             │           │
+                         │         │ timeout:"5.0"                      │           │
+                         │         ▼                                    ▼           │
+                         │  ┌──────────────┐                ┌──────────────────┐    │
+                         │  │ Robot        │                │ opcua_to_ros2    │    │
+                         │  │ Controllers  │                │ (opc_bridge)     │    │
+                         │  │ (XBot2 /     │                │                  │    │
+                         │  │  xbotcore)   │                │                  │    │
+                         │  └──────────────┘                └──────────────────┘    │
                          └──────────────────────────────────────────────────────────┘
 ```
 
@@ -206,98 +211,156 @@ Slider position targets are sent through:
 ```text
 opcua_to_ros2/srv/SetFloat32
 ```
+## BehaviorTree Integration (`bt-ros2-interface`)
+
+`bt-ros2-interface` coordinates the sequential execution of industrial operations (e.g., waiting for car body placement, sending slider move requests, and validating operation completion).
+
+### XML Tree Definition
+
+The behavior tree is defined in XML (`bt-ros2-interface/config/bt_tree.xml`) using BehaviorTree.CPP v4 format:
+
+```
+
+```
+
+### Custom BT Nodes
+
+1. **`WaitForSignal` (Condition / Sync Node):**
+
+  * Subscribes to a boolean topic (`std_msgs/msg/Bool`).
+  * Blocks execution until the topic publishes `expected_value` ("true"/"false") or until `timeout` (seconds) expires.
+  * Returns `SUCCESS` when the condition is met, or `FAILURE` on timeout.
+2. **`ClientReq` (Action Node):**
+
+  * Triggers a ROS 2 command or service request on the specified `topic`.
+  * Sends `request_payload="true"` and waits for acknowledgement within `timeout` seconds.
+  * Returns `SUCCESS` on successful trigger or `FAILURE` on timeout/communication error.
 
 ---
 
-### 3. `demonstrator_tree`
+## Installation &amp; Build Guide
 
-`demonstrator_tree` runs a BehaviorTree that checks whether both robots are at home, triggers homing when needed, and finally enables safe-transfer flags through the `opcua_to_ros2` bridge.
+### Prerequisites
 
-### Tree Logic
+Ensure you have Ubuntu 22.04 LTS and ROS 2 Humble installed.
 
-```xml
-<root BTCPP_format="4">
-  <BehaviorTree ID="MainTree">
-    <Sequence name="magician_sequence">
-      <Fallback>
-        <IsRobotAtHome name="check_home_pos"/>
-        <CallHoming name="call_homing_service"/>
-      </Fallback>
+```
+# System Dependencies
+sudo apt update
+sudo apt install -y \
+  ros-humble-behaviortree-cpp \
+  ros-humble-rclcpp \
+  ros-humble-std-msgs \
+  ros-humble-std-srvs \
+  libyaml-cpp-dev \
+  qtbase5-dev
 
-      <CallOpcUI name="call_opcua_service"/>
-    </Sequence>
-  </BehaviorTree>
-</root>
 ```
 
-### Node Roles
+### 3.`bt-ros2-interface` &amp; Workspace Setup
 
-| Node                 | Role                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------ |
-| `MagicianSubNode`    | Subscribes to robot joint states and checks whether both robots match their configured home positions. |
-| `MagicianClientNode` | Calls the configured homing services for the sensing and cleaning robots.                              |
-| `MagicianOpcUA`      | Calls `/ros2_comm/sensing/safetransfer_set` and `/ros2_comm/cleaning/safetransfer_set`.                |
-
-### Current BehaviorTree Configuration
-
-The active `parameters.yaml` is configured for the XBot2 interfaces exposed by the sensing and cleaning cobots:
-
-```yaml
-cobot1:
-  robot_name: "sensing_cobot"
-  sensing_joint_states: "/sr/xbotcore/joint_states"
-  sensing_service: "/sr/xbotcore/homing/switch"
-  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
-
-cobot2:
-  robot_name: "cleaning_cobot"
-  cleaning_joint_states: "/cr/xbotcore/joint_states"
-  cleaning_service: "/cr/xbotcore/homing/switch"
-  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
+1. **Create and prepare the ROS 2 workspace:**  
+```  
+mkdir -p ~/sample_ws/src  
+cd ~/sample_ws/src  
 ```
-
-Topic and service names follow XBot2 conventions:
-
-```text
-/sr/xbotcore/...
-/cr/xbotcore/...
+2. **Clone the repositories:**  
+```  
+# Clone bt-ros2-interface  
+git clone https://github.com/FurkannByrm/bt-ros2-interface.git  
+# Clone ros2-opcua-bridge  
+git clone https://github.com/FurkannByrm/ros2-opcua-bridge.git  
 ```
-
-where:
-
-* `/sr/xbotcore/...` is used for the sensing robot
-* `/cr/xbotcore/...` is used for the cleaning robot
-
-Update `parameters.yaml` if your XBot2 namespaces differ.
-
-### Message Type Adaptability
-
-`demonstrator_tree` currently subscribes using:
-
-```text
-xbot_msgs::msg::JointState
+3. **Build the workspace:**  
+```  
+cd ~/sample_ws  
+source /opt/ros/humble/setup.bash  
+# Build bt-ros2-interface package individually:  
+colcon build --packages-select bt-ros2-interface  
+# Or build all packages together:  
+colcon build  
+# Source the overlay  
+source install/setup.bash  
 ```
-
-from XBot2.
-
-This can be replaced with any compatible joint-state message type, for example:
-
-```text
-sensor_msgs/msg/JointState
-```
-
-by updating:
-
-* `behavior_node.hpp`
-* `behavior_node.cpp`
-* `CMakeLists.txt`
-* `package.xml`
-
-accordingly.
-
-> **Note:** The executable currently loads `parameters.yaml` and `bt_tree.xml` through absolute paths inside the workspace. The package is therefore intended to run from this workspace layout as-is.
 
 ---
+
+## How to Run
+
+### Running `bt-ros2-interface`
+
+#### Standalone Run
+
+```
+source ~/sample_ws/install/setup.bash
+ros2 run bt-ros2-interface bt_ros2_node
+
+```
+
+#### Running with Custom Config / XML Parameters
+
+```
+ros2 run bt-ros2-interface bt_ros2_node --ros-args \
+  -p bt_xml_filename:=bt_tree.xml \
+  -p param_file:=parameters.yaml
+
+```
+
+#### Running via Launch File
+
+```
+ros2 launch bt-ros2-interface bt_launch.py
+
+```
+
+### Full System Execution
+
+To run `bt-ros2-interface` alongside the OPC UA backend and GUI:
+
+```
+# Terminal 1: OPC UA Bridge Backend
+ros2 launch backend system.launch.py
+
+# Terminal 2: Operator GUI
+ros2 run gui_app gui_node
+
+# Terminal 3: BehaviorTree Orchestration Node
+ros2 run bt-ros2-interface bt_ros2_node
+
+```
+
+### Testing &amp; Signal Simulation
+
+You can manually trigger and test BT node signal transitions using ROS 2 CLI tools:
+
+```
+# Simulate carbody located signal (triggers step 1)
+ros2 topic pub /ros2_comm/sensing/carbody_located_status std_msgs/msg/Bool "data: true" -1
+
+# Simulate completion of operation 1
+ros2 topic pub /is_operation1_finished std_msgs/msg/Bool "data: true" -1
+
+# Simulate completion of operation 2
+ros2 topic pub /is_operation2_finished std_msgs/msg/Bool "data: true" -1
+
+# Monitor active slider commands issued by BT
+ros2 topic echo /ros2_comm/sensing/go_slider_pos1
+
+```
+
+---
+
+## ROS 2 Interfaces
+
+### Key Topics Used by BehaviorTree
+
+| Topic Name                                  | Type                | Description                              |
+| ------------------------------------------- | ------------------- | ---------------------------------------- |
+| `/ros2_comm/sensing/carbody_located_status` | `std_msgs/msg/Bool` | Signal indicating car body presence      |
+| `/ros2_comm/sensing/go_slider_pos1..6`      | `std_msgs/msg/Bool` | Commands to send slider to positions 1-6 |
+| `/is_operation1..4_finished`                | `std_msgs/msg/Bool` | Operation completion status signals      |
+---
+
 ## ROS 2 Interfaces
 
 The `opcua_to_ros2` bridge exposes the PLC state and commands through ROS 2 topics and services.
@@ -924,57 +987,7 @@ Or run the packages manually:
 ```bash
 ros2 run opcua_to_ros2 opc_bridge
 ros2 run gui_app gui_node
-ros2 run demonstrator_tree demo
 ```
-
-### Test Mode
-
-The package provides a separate test configuration for development and testing without modifying the production configuration.
-
-Run the bridge using:
-
-```bash
-ros2 launch opcua_to_ros2 test_system.launch.py
-```
-
-Or run the bridge manually:
-
-```bash
-ros2 run opcua_to_ros2 opc_bridge --ros-args -p config:=opcua_test.yaml
-```
-
-### Bridge + GUI Test
-
-```bash
-ros2 launch opcua_to_ros2 full_test_system.launch.py
-```
-
-### BehaviorTree Test
-
-If you want to test only the BehaviorTree logic, provide matching joint-state publishers and homing services, or adapt:
-
-```text
-demonstrator_tree/config/parameters.yaml
-```
-
-to your own robot stack.
-
-The joint-state topics must publish:
-
-```text
-xbot_msgs/msg/JointState
-```
-
-by default.
-
-If you use a different middleware or message type, update the subscription type in:
-
-```text
-behavior_node.hpp
-behavior_node.cpp
-```
-
-first.
 
 ---
 
@@ -988,12 +1001,6 @@ magician_ws/src/
 │   ├── launch/
 │   ├── src/
 │   ├── srv/
-│   └── test/
-│
-├── demonstrator_tree/
-│   ├── config/
-│   ├── include/demonstrator_tree/
-│   ├── src/
 │   └── test/
 │
 ├── gui_app/

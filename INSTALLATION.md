@@ -133,66 +133,6 @@ sudo apt install -y \
 
 ---
 
-## 4.1 Install XBot2
-
-The `demonstrator_tree` package subscribes to `xbot_msgs/msg/JointState` topics published by XBot2 robot controllers.
-
-XBot2 must be installed and its environment sourced before building or running the workspace.
-
-XBot2 is installed system-wide under:
-
-```text
-/opt/xbot
-```
-
-Headers used by this project are located at:
-
-```text
-/opt/xbot/include/xbot_msgs/xbot_msgs/msg/
-  joint_state.hpp
-  joint_command.hpp
-  fault.hpp
-  ...
-```
-
-Source the XBot2 environment:
-
-```bash
-source /opt/xbot/setup.sh
-```
-
-To source it automatically for every terminal:
-
-```bash
-grep -qxF 'source /opt/xbot/setup.sh' ~/.bashrc \
-  || echo 'source /opt/xbot/setup.sh' >> ~/.bashrc
-```
-
-### Note — message type adaptability
-
-`demonstrator_tree` currently uses `xbot_msgs::msg::JointState` to read robot joint positions.
-
-If your robot stack does not use XBot2, you can replace this dependency with another joint-state message type, such as:
-
-```text
-sensor_msgs/msg/JointState
-```
-
-The relevant source files are:
-
-```text
-include/demonstrator_tree/behavior_node.hpp
-src/demonstrator_tree/behavior_node.cpp
-```
-
-If the message type is changed, update the corresponding dependencies in:
-
-```text
-demonstrator_tree/CMakeLists.txt
-demonstrator_tree/package.xml
-```
-
----
 
 ## 5. Install open62541
 
@@ -297,7 +237,6 @@ Expected workspace structure:
 ```text
 ~/magician_ws/src/
 ├── opcua_to_ros2/
-├── demonstrator_tree/
 ├── gui_app/
 ├── INSTALLATION.md
 └── README.md
@@ -399,53 +338,6 @@ namespace_index: 3
 
 ---
 
-## 8.2 BehaviorTree Configuration
-
-The current `demonstrator_tree/config/parameters.yaml` is configured for XBot2 interfaces.
-
-Example:
-
-```yaml
-cobot1:
-  robot_name: "sensing_cobot"
-  sensing_joint_states: "/sr/xbotcore/joint_states"
-  sensing_service: "/sr/xbotcore/homing/switch"
-  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
-
-cobot2:
-  robot_name: "cleaning_cobot"
-  cleaning_joint_states: "/cr/xbotcore/joint_states"
-  cleaning_service: "/cr/xbotcore/homing/switch"
-  home_position: [0.0036, 0.6, 1.57, 0.003, 0.99, 0.005]
-```
-
-The topic names:
-
-```text
-/sr/xbotcore/joint_states
-/cr/xbotcore/joint_states
-```
-
-and service names:
-
-```text
-/sr/xbotcore/homing/switch
-/cr/xbotcore/homing/switch
-```
-
-are the default XBot2 interfaces.
-
-If your XBot2 configuration uses different namespaces, update:
-
-```text
-demonstrator_tree/config/parameters.yaml
-```
-
-accordingly.
-
-> **Note:** The `demo` executable currently loads its XML and YAML configuration using workspace absolute paths. Keep the repository at the expected workspace location or update the source accordingly.
-
----
 
 ## 9. Run the System
 
@@ -492,11 +384,6 @@ Start the GUI:
 ros2 run gui_app gui_node
 ```
 
-Start the BehaviorTree application:
-
-```bash
-ros2 run demonstrator_tree demo
-```
 
 ---
 
@@ -722,8 +609,6 @@ echo ""
 echo "GUI:"
 echo "  ros2 run gui_app gui_node"
 echo ""
-echo "BehaviorTree:"
-echo "  ros2 run demonstrator_tree demo"
 ```
 
 ---
@@ -747,12 +632,6 @@ Main responsibilities include:
 
 Provides the graphical user interface for interacting with the system.
 
-### `demonstrator_tree`
-
-Contains the BehaviorTree-based robot coordination and automation logic.
-
-It interfaces with the robot middleware and ROS 2 components required by the demonstrator.
-
 ---
 
 ## 14. System Architecture
@@ -768,8 +647,8 @@ The overall communication flow is:
                                │ OPC UA
                                │
                     ┌──────────▼──────────┐
-                    │    opcua_to_ros2     │
-                    │     opc_bridge       │
+                    │    opcua_to_ros2    │
+                    │     opc_bridge      │
                     └──────────┬──────────┘
                                │
                                │ ROS 2
@@ -777,8 +656,8 @@ The overall communication flow is:
               │                │                │
               ▼                ▼                ▼
        ┌────────────┐   ┌───────────────┐   ┌──────────────┐
-       │  gui_app   │   │ demonstrator  │   │ Other ROS 2  │
-       │            │   │     _tree     │   │    nodes     │
+       │  gui_app   │   │ behaviour-tree│   │ Other ROS 2  │
+       │            │   │               │   │    nodes     │
        └────────────┘   └───────────────┘   └──────────────┘
 ```
 
@@ -791,7 +670,6 @@ The `opcua_to_ros2` package acts as the communication bridge between the industr
 * The system requires a working OPC UA server for runtime operation.
 * The PLC endpoint must be reachable from the host machine.
 * The configured OPC UA namespace index must match the server configuration.
-* XBot2 must be sourced before starting `demonstrator_tree`.
 * `open62541` must be installed system-wide before building `opcua_to_ros2`.
 * After changing package names, dependencies, or interfaces, perform a clean build if necessary.
 * Always source the ROS 2 workspace before running the system:
@@ -804,9 +682,7 @@ For a complete production startup:
 
 ```bash
 source /opt/ros/humble/setup.bash
-source /opt/xbot/setup.sh
 source ~/magician_ws/install/setup.bash
-
 ros2 launch opcua_to_ros2 system.launch.py
 ```
 
