@@ -30,22 +30,22 @@ private:
   // Sensing robot clients
   BoolClient       cli_sensing_safetransfer_;
   BoolClient       cli_sensing_carbody_located_st_;  
-  BoolClient       cli_sensing_slider_go_pos1_;
-  BoolClient       cli_sensing_slider_go_pos2_;
-  BoolClient       cli_sensing_slider_go_pos3_;  
-  BoolClient       cli_sensing_slider_go_pos4_;  
-  BoolClient       cli_sensing_slider_go_pos5_;  
-  BoolClient       cli_sensing_slider_go_pos6_;  
+  BoolClient       cli_sensing_slider_initial_pos_;
+  BoolClient       cli_sensing_slider_pos1_;
+  BoolClient       cli_sensing_slider_pos2_;  
+  BoolClient       cli_sensing_slider_pos3_;  
+  BoolClient       cli_sensing_slider_pos4_;  
+  BoolClient       cli_sensing_slider_pos5_;  
 
   // Cleaning robot clients
   BoolClient       cli_cleaning_safetransfer_;
   BoolClient       cli_cleaning_carbody_located_st_;    
-  BoolClient       cli_cleaning_slider_go_pos1_;
-  BoolClient       cli_cleaning_slider_go_pos2_;
-  BoolClient       cli_cleaning_slider_go_pos3_;  
-  BoolClient       cli_cleaning_slider_go_pos4_;  
-  BoolClient       cli_cleaning_slider_go_pos5_;  
-  BoolClient       cli_cleaning_slider_go_pos6_;  
+  BoolClient       cli_cleaning_slider_initial_pos_;
+  BoolClient       cli_cleaning_slider_pos1_;
+  BoolClient       cli_cleaning_slider_pos2_;  
+  BoolClient       cli_cleaning_slider_pos3_;  
+  BoolClient       cli_cleaning_slider_pos4_;  
+  BoolClient       cli_cleaning_slider_pos5_;  
 
   // Subscriptions
   BoolSubscription   sub_cobot_mode_;
@@ -78,21 +78,21 @@ private:
   QPushButton* btnAutomaticModeToggle_;
   QPushButton* btnSensingSafeTransferToggle_;
   QPushButton* btnSensingCarbodyLocatedSt_;
+  QPushButton* btnSensingInitPosToggle_;
   QPushButton* btnSensingPos1Toggle_;
   QPushButton* btnSensingPos2Toggle_;
   QPushButton* btnSensingPos3Toggle_;
   QPushButton* btnSensingPos4Toggle_;
   QPushButton* btnSensingPos5Toggle_;
-  QPushButton* btnSensingPos6Toggle_;
 
   QPushButton* btnCleaningSafeTransferToggle_;
   QPushButton* btnCleaningCarbodyLocatedSt_;
+  QPushButton* btnCleaningInitPosToggle_;
   QPushButton* btnCleaningPos1Toggle_;
   QPushButton* btnCleaningPos2Toggle_;
   QPushButton* btnCleaningPos3Toggle_;
   QPushButton* btnCleaningPos4Toggle_;
   QPushButton* btnCleaningPos5Toggle_;
-  QPushButton* btnCleaningPos6Toggle_;
   QLineEdit* slider1Pos_;
   QLineEdit* slider2Pos_;
     

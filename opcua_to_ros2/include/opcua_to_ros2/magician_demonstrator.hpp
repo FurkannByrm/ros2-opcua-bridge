@@ -161,7 +161,7 @@ class Sensing : public rclcpp::Node{
     BoolPub pub_sensing_position_4_; 
     BoolPub pub_sensing_position_5_;
     BoolPub pub_sensing_active_;
-    BoolPub pub_sensing_position_1_reached_;
+    BoolPub pub_sensing_position_1_reached_;//this is initial pos feedback
     BoolPub pub_sensing_position_2_reached_;
     BoolPub pub_sensing_position_3_reached_;
     BoolPub pub_sensing_position_4_reached_; 
@@ -174,12 +174,12 @@ class Sensing : public rclcpp::Node{
     BoolSrv srv_sensing_position_3_bypass_set_;
     BoolSrv srv_sensing_position_4_bypass_set_;
     BoolSrv srv_sensing_position_5_bypass_set_;
-    BoolSrv srv_sensing_go_slider_pos1_;//go initial pos
-    BoolSrv srv_sensing_go_slider_pos2_;//go pos2
-    BoolSrv srv_sensing_go_slider_pos3_;
-    BoolSrv srv_sensing_go_slider_pos4_;
-    BoolSrv srv_sensing_go_slider_pos5_;
-    BoolSrv srv_sensing_go_slider_pos6_;
+    BoolSrv srv_sensing_slider_init_pos_ok_;//says initial pos
+    BoolSrv srv_sensing_slider_pos1_ok_;//go pos2
+    BoolSrv srv_sensing_slider_pos2_ok_;//go pos3
+    BoolSrv srv_sensing_slider_pos3_ok_;//go pos4
+    BoolSrv srv_sensing_slider_pos4_ok_;//go pos5
+    BoolSrv srv_sensing_slider_pos5_ok_;//go pos6
 
     std::shared_ptr<OPCuaBridge> opc_srv_; 
 };
@@ -194,7 +194,7 @@ class Cleaning : public rclcpp::Node{
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_cleaning_slider_actual_pos_; 
     BoolPub pub_cleaning_robot_home_st_;
     BoolPub pub_cleaning_carbody_located_st_; 
-    BoolPub pub_cleaning_position_1_;
+    BoolPub pub_cleaning_position_1_;//that gives initial pos feedback
     BoolPub pub_cleaning_position_2_;
     BoolPub pub_cleaning_position_3_;
     BoolPub pub_cleaning_position_4_;
@@ -211,12 +211,12 @@ class Cleaning : public rclcpp::Node{
     BoolSrv srv_cleaning_position_3_bypass_set_;
     BoolSrv srv_cleaning_position_4_bypass_set_;
     BoolSrv srv_cleaning_position_5_bypass_set_;
-    BoolSrv srv_cleaning_go_slider_pos1_;//pos1 initial pos
-    BoolSrv srv_cleaning_go_slider_pos2_;
-    BoolSrv srv_cleaning_go_slider_pos3_;
-    BoolSrv srv_cleaning_go_slider_pos4_;
-    BoolSrv srv_cleaning_go_slider_pos5_; 
-    BoolSrv srv_cleaning_go_slider_pos6_;
+    BoolSrv srv_cleaning_slider_init_pos_ok_;//says initial pos
+    BoolSrv srv_cleaning_slider_pos1_ok_;
+    BoolSrv srv_cleaning_slider_pos2_ok_;
+    BoolSrv srv_cleaning_slider_pos3_ok_;
+    BoolSrv srv_cleaning_slider_pos4_ok_; 
+    BoolSrv srv_cleaning_slider_pos5_ok_;
 
     std::shared_ptr<OPCuaBridge> opc_srv_; 
 };

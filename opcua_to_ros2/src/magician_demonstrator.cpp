@@ -258,8 +258,8 @@ void Sensing::sensingServices(){
     });
 
 
-  srv_sensing_go_slider_pos1_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/go_slider_pos1",
+  srv_sensing_slider_init_pos_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/sensing/initial_pos_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
        opc_srv_->set_sensing<bool>("init_Pos", req->data);
@@ -267,8 +267,8 @@ void Sensing::sensingServices(){
         res->message = std::string("running set to ") + (req->data ? "true" : "false");
       });
 
-  srv_sensing_go_slider_pos2_ = create_service<std_srvs::srv::SetBool>(
-          "/ros2_comm/sensing/go_slider_pos2",
+  srv_sensing_slider_pos1_ok_ = create_service<std_srvs::srv::SetBool>(
+          "/ros2_comm/sensing/pos1_ok_",
           [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
               std_srvs::srv::SetBool::Response::SharedPtr res) {
           opc_srv_->set_sensing<bool>("Sensing_Pos_1", req->data);
@@ -276,8 +276,8 @@ void Sensing::sensingServices(){
           res->message = std::string("sensing-go-slider-pos2 set to ") + (req->data ? "true" : "false");
           });
 
-  srv_sensing_go_slider_pos3_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/go_slider_pos3",
+  srv_sensing_slider_pos2_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/sensing/pos2_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
        opc_srv_->set_sensing<bool>("Sensing_Pos_2", req->data);
@@ -285,8 +285,8 @@ void Sensing::sensingServices(){
         res->message = std::string("sensing-position set to ") + (req->data ? "true" : "false");
       });
 
-  srv_sensing_go_slider_pos4_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/go_slider_pos4",
+  srv_sensing_slider_pos3_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/sensing/pos3_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
        opc_srv_->set_sensing<bool>("Sensing_Pos_3", req->data);
@@ -294,8 +294,8 @@ void Sensing::sensingServices(){
         res->message = std::string("sensing-position set to ") + (req->data ? "true" : "false");
       });
 
-  srv_sensing_go_slider_pos5_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/go_slider_pos5",
+  srv_sensing_slider_pos4_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/sensing/pos4_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
        opc_srv_->set_sensing<bool>("Sensing_Pos_4", req->data);
@@ -304,8 +304,8 @@ void Sensing::sensingServices(){
       });
 
     
-  srv_sensing_go_slider_pos6_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/go_slider_pos6",
+  srv_sensing_slider_pos5_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/sensing/pos5_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
        opc_srv_->set_sensing<bool>("Sensing_Pos_5", req->data);
@@ -484,8 +484,8 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
     });
 
 
-  srv_cleaning_go_slider_pos1_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/cleaning/go_slider_pos1",
+  srv_cleaning_slider_init_pos_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/cleaning/intial_pos_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
         opc_srv_->set_cleaning<bool>("init_Pos", req->data);
@@ -493,8 +493,8 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
         res->message = std::string("running set to ") + (req->data ? "true" : "false");
       });
 
-  srv_cleaning_go_slider_pos2_ = create_service<std_srvs::srv::SetBool>(
-          "/ros2_comm/cleaning/go_slider_pos2",
+  srv_cleaning_slider_pos1_ok_ = create_service<std_srvs::srv::SetBool>(
+          "/ros2_comm/cleaning/pos1_ok",
           [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
               std_srvs::srv::SetBool::Response::SharedPtr res) {
           opc_srv_->set_cleaning<bool>("Cleaning_Pos_1", req->data);
@@ -502,8 +502,8 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
           res->message = std::string("go slider pos2 set to ") + (req->data ? "true" : "false");
           });
 
-    srv_cleaning_go_slider_pos3_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/cleaning/go_slider_pos3",
+    srv_cleaning_slider_pos2_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/cleaning/pos2_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
         opc_srv_->set_cleaning<bool>("Cleaning_Pos_2", req->data);
@@ -512,8 +512,8 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
       });
 
 
-    srv_cleaning_go_slider_pos4_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/cleaning/go_slider_pos4",
+    srv_cleaning_slider_pos3_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/cleaning/pos3_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
         opc_srv_->set_cleaning<bool>("Cleaning_Pos_3", req->data);
@@ -522,8 +522,8 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
       });
 
 
-    srv_cleaning_go_slider_pos5_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/cleaning/go_slider_pos5",
+    srv_cleaning_slider_pos4_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/cleaning/pos4_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
         opc_srv_->set_cleaning<bool>("Cleaning_Pos_4", req->data);
@@ -532,8 +532,8 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
       });
 
 
-    srv_cleaning_go_slider_pos6_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/cleaning/go_slider_pos6",
+    srv_cleaning_slider_pos5_ok_ = create_service<std_srvs::srv::SetBool>(
+    "/ros2_comm/cleaning/pos5_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
         opc_srv_->set_cleaning<bool>("Cleaning_Pos_5", req->data);
