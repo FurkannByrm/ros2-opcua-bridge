@@ -29,29 +29,23 @@ private:
 
   // Sensing robot clients
   BoolClient       cli_sensing_safetransfer_;
-  BoolClient       cli_sensing_finished_;
-  BoolClient       cli_sensing_touch_finished_;
-  BoolClient       cli_sensing_active_;
-  BoolClient       cli_sensing_touch_active_;
   BoolClient       cli_sensing_carbody_located_st_;  
-  BoolClient       cli_sensing_running_;
-  BoolClient       cli_sensing_pos2_st_;  
-  BoolClient       cli_sensing_pos3_st_;  
-  BoolClient       cli_sensing_pos4_st_;  
-  BoolClient       cli_sensing_pos5_st_;  
-
+  BoolClient       cli_sensing_slider_go_pos1_;
+  BoolClient       cli_sensing_slider_go_pos2_;
+  BoolClient       cli_sensing_slider_go_pos3_;  
+  BoolClient       cli_sensing_slider_go_pos4_;  
+  BoolClient       cli_sensing_slider_go_pos5_;  
+  BoolClient       cli_sensing_slider_go_pos6_;  
 
   // Cleaning robot clients
   BoolClient       cli_cleaning_safetransfer_;
-  BoolClient       cli_cleaning_finished_;
-  BoolClient       cli_cleaning_active_;
-  BoolClient       cli_cleaning_carbody_located_st_;
-  BoolClient       cli_cleaning_running_;
-  BoolClient       cli_cleaning_pos2_st_;  
-  BoolClient       cli_cleaning_pos3_st_;  
-  BoolClient       cli_cleaning_pos4_st_;  
-  BoolClient       cli_cleaning_pos5_st_;  
-
+  BoolClient       cli_cleaning_carbody_located_st_;    
+  BoolClient       cli_cleaning_slider_go_pos1_;
+  BoolClient       cli_cleaning_slider_go_pos2_;
+  BoolClient       cli_cleaning_slider_go_pos3_;  
+  BoolClient       cli_cleaning_slider_go_pos4_;  
+  BoolClient       cli_cleaning_slider_go_pos5_;  
+  BoolClient       cli_cleaning_slider_go_pos6_;  
 
   // Subscriptions
   BoolSubscription   sub_cobot_mode_;
@@ -59,12 +53,9 @@ private:
   
   // Sensing subscriptions
   BoolSubscription   sub_sensing_safetransfer_;
-  BoolSubscription   sub_sensing_finished_;
-  BoolSubscription   sub_sensing_touch_finished_;
-  BoolSubscription   sub_sensing_active_;
-  BoolSubscription   sub_sensing_touch_active_;
   BoolSubscription   sub_sensing_carbody_located_st_;
-  BoolSubscription   sub_sensing_running_;
+  BoolSubscription   sub_sensing_init_pos_st_;
+  BoolSubscription   sub_sensing_pos1_st_;
   BoolSubscription   sub_sensing_pos2_st_;
   BoolSubscription   sub_sensing_pos3_st_;
   BoolSubscription   sub_sensing_pos4_st_;
@@ -73,10 +64,9 @@ private:
 
   // Cleaning subscriptions
   BoolSubscription   sub_cleaning_safetransfer_;
-  BoolSubscription   sub_cleaning_finished_;
-  BoolSubscription   sub_cleaning_active_;
   BoolSubscription   sub_cleaning_carbody_located_st_;
-  BoolSubscription   sub_cleaning_running_;
+  BoolSubscription   sub_cleaning_init_pos_st_;
+  BoolSubscription   sub_cleaning_pos1_st_;
   BoolSubscription   sub_cleaning_pos2_st_;
   BoolSubscription   sub_cleaning_pos3_st_;
   BoolSubscription   sub_cleaning_pos4_st_;
@@ -87,26 +77,22 @@ private:
   QPushButton* btnCobotModeToggle_; 
   QPushButton* btnAutomaticModeToggle_;
   QPushButton* btnSensingSafeTransferToggle_;
-  QPushButton* btnSensingFinishedToggle_;
-  QPushButton* btnSensingTouchFinishedToggle_;
-  QPushButton* btnSensingActiveToggle_;
-  QPushButton* btnSensingTouchActiveToggle_;
-  QPushButton* btnSensingRunningToggle_;
   QPushButton* btnSensingCarbodyLocatedSt_;
+  QPushButton* btnSensingPos1Toggle_;
   QPushButton* btnSensingPos2Toggle_;
   QPushButton* btnSensingPos3Toggle_;
   QPushButton* btnSensingPos4Toggle_;
   QPushButton* btnSensingPos5Toggle_;
+  QPushButton* btnSensingPos6Toggle_;
 
   QPushButton* btnCleaningSafeTransferToggle_;
-  QPushButton* btnCleaningFinishedToggle_;
-  QPushButton* btnCleaningActiveToggle_;
-  QPushButton* btnCleaningRunningToggle_;
   QPushButton* btnCleaningCarbodyLocatedSt_;
+  QPushButton* btnCleaningPos1Toggle_;
   QPushButton* btnCleaningPos2Toggle_;
   QPushButton* btnCleaningPos3Toggle_;
   QPushButton* btnCleaningPos4Toggle_;
   QPushButton* btnCleaningPos5Toggle_;
+  QPushButton* btnCleaningPos6Toggle_;
   QLineEdit* slider1Pos_;
   QLineEdit* slider2Pos_;
     

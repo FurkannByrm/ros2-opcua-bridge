@@ -101,13 +101,10 @@ void Sensing::sensingPublishers(rclcpp::QoS qos){
 
 
   pub_sensing_robot_home_st_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/home_st",qos.best_effort());
-  pub_sensing_active_ =  this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/sensing_active",qos.best_effort());
-  pub_touch_sensing_active_ =  this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/touch_active",qos.best_effort());
   pub_sensing_carbody_located_st_=this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/carbody_located_status", qos.best_effort());
   pub_sensing_slider_actual_pos_ =this->create_publisher<std_msgs::msg::Float32>("/ros2_comm/sensing/slider_actual_pos",qos.best_effort()); 
 
-  pub_sensing_finished_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/finished",qos.best_effort());
-  pub_touch_sensing_finished_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/touch_finished",qos.best_effort());
+  pub_sensing_position_1_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/pos1_status",qos.best_effort());
   pub_sensing_position_2_=this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/pos2_status",qos.best_effort());
   pub_sensing_position_3_=this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/pos3_status",qos.best_effort());
   pub_sensing_position_4_=this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/sensing/pos4_status",qos.best_effort()); 
@@ -136,30 +133,7 @@ opc_srv_->get_sensing<bool>("robothome_safetransfer", [this](bool v){
     pub_sensing_robot_home_st_->publish(msg);
   });
 
-opc_srv_->get_sensing<bool>("sensing-finised", [this](bool v){
-    std_msgs::msg::Bool msg; 
-    msg.data = v;
-    pub_sensing_finished_->publish(msg);
-  });
-
-opc_srv_->get_sensing<bool>("touchsensing-finished", [this](bool v){
-    std_msgs::msg::Bool msg; 
-    msg.data = v;
-    pub_touch_sensing_finished_->publish(msg);
-  });
-
-opc_srv_->get_sensing<bool>("sensing-active", [this](bool v){
-    std_msgs::msg::Bool msg; 
-    msg.data = v;
-    pub_sensing_active_->publish(msg);
-  });
-
-  opc_srv_->get_sensing<bool>("touchsensing-active", [this](bool v){
-    std_msgs::msg::Bool msg; 
-    msg.data = v;
-    pub_touch_sensing_active_->publish(msg);
-  });
-  opc_srv_->get_sensing<bool>("running", [this](bool v){
+  opc_srv_->get_sensing<bool>("init_Pos", [this](bool v){
     std_msgs::msg::Bool msg; 
     msg.data = v;
     pub_sensing_position_1_reached_->publish(msg);
@@ -171,6 +145,11 @@ opc_srv_->get_sensing<bool>("sensing-active", [this](bool v){
     pub_sensing_carbody_located_st_->publish(msg);
     });
 
+    opc_srv_->get_sensing<bool>("Sensing_Pos_1", [this](bool v){
+    std_msgs::msg::Bool msg; 
+    msg.data = v;
+    pub_sensing_position_1_->publish(msg);
+    });
     
     opc_srv_->get_sensing<bool>("Sensing_Pos_2", [this](bool v){
     std_msgs::msg::Bool msg;
@@ -245,55 +224,57 @@ void Sensing::sensingServices(){
         res->success = true;
         res->message = std::string("robothome_safetransfer set to ") + (req->data ? "true" : "false");
       });
-
-  srv_sensing_go_slider_pos2_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/go_slider_pos2",
+    
+  srv_sensing_position_2_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/sensing/position2_bypass_set",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
-      std_srvs::srv::SetBool::Response::SharedPtr res) {
-       opc_srv_->set_sensing<bool>("sensing-finised", req->data);
-        res->success = true;
-        res->message = std::string("sensing-go-slider-pos2 set to ") + (req->data ? "true" : "false");
-      });
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Sensing_Pos_2_Bypass",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos2 ") + (req->data ? "true" : "false");
+    });
+
+  srv_sensing_position_3_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/sensing/position3_bypass_set",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Sensing_Pos_3_Bypass",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos3 ") + (req->data ? "true" : "false");
+    });
+
+  srv_sensing_position_4_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/sensing/position4_bypass_set",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Sensing_Pos_4_Bypass",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos4 ") + (req->data ? "true" : "false");
+    });
   
-
-  srv_touch_sensing_go_slider_pos2_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/t_go_slider_pos2",
+  srv_sensing_position_5_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/sensing/position5_bypass_set",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
-      std_srvs::srv::SetBool::Response::SharedPtr res) {
-       opc_srv_->set_sensing<bool>("touchsensing-finished", req->data);
-        res->success = true;
-        res->message = std::string("touchsensing-go-slider-pos2 set to ") + (req->data ? "true" : "false");
-      });
-
-
-  srv_sensing_active_set_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/active_set",
-    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
-      std_srvs::srv::SetBool::Response::SharedPtr res) {
-       opc_srv_->set_sensing<bool>("sensing-active", req->data);
-        res->success = true;
-        res->message = std::string("sensing-active set to ") + (req->data ? "true" : "false");
-      });
-
-  srv_touch_sensing_active_set_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/sensing/touch_active_set",
-        [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
-      std_srvs::srv::SetBool::Response::SharedPtr res) {
-       opc_srv_->set_sensing<bool>("touchsensing-active", req->data);
-        res->success = true;
-        res->message = std::string("touchsensing-active set to ") + (req->data ? "true" : "false");
-      });    
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Sensing_Pos_5_Bypass",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos5 ") + (req->data ? "true" : "false");
+    });
 
 
   srv_sensing_go_slider_pos1_ = create_service<std_srvs::srv::SetBool>(
     "/ros2_comm/sensing/go_slider_pos1",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
-       opc_srv_->set_sensing<bool>("running", req->data);
+       opc_srv_->set_sensing<bool>("init_Pos", req->data);
         res->success = true;
         res->message = std::string("running set to ") + (req->data ? "true" : "false");
       });
 
+  srv_sensing_go_slider_pos2_ = create_service<std_srvs::srv::SetBool>(
+          "/ros2_comm/sensing/go_slider_pos2",
+          [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+              std_srvs::srv::SetBool::Response::SharedPtr res) {
+          opc_srv_->set_sensing<bool>("Sensing_Pos_1", req->data);
+          res->success = true;
+          res->message = std::string("sensing-go-slider-pos2 set to ") + (req->data ? "true" : "false");
+          });
 
   srv_sensing_go_slider_pos3_ = create_service<std_srvs::srv::SetBool>(
     "/ros2_comm/sensing/go_slider_pos3",
@@ -344,12 +325,11 @@ Cleaning::Cleaning(std::shared_ptr<OPCuaBridge> opc_srv) : Node{"cleaning_demons
 void Cleaning::cleaningPublishers(rclcpp::QoS qos){
     
   pub_cleaning_robot_home_st_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/home_st",qos.best_effort());
-  pub_cleaning_finished_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/finished",qos.best_effort());
-  pub_cleaning_active_ =  this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/cleaning_active",qos.best_effort());
   pub_cleaning_carbody_located_st_=this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/carbody_located_status",qos.best_effort());
   pub_cleaning_slider_actual_pos_ =this->create_publisher<std_msgs::msg::Float32>("/ros2_comm/cleaning/slider_actual_pos",qos.best_effort());
 
 
+  pub_cleaning_position_1_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/pos1_status",qos.best_effort());
   pub_cleaning_position_2_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/pos2_status", qos.best_effort());
   pub_cleaning_position_3_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/pos3_status", qos.best_effort());
   pub_cleaning_position_4_ = this->create_publisher<std_msgs::msg::Bool>("/ros2_comm/cleaning/pos4_status", qos.best_effort());
@@ -370,26 +350,24 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
           msg.data = static_cast<float>(v);
           pub_cleaning_slider_actual_pos_->publish(msg);    
           });
+
   opc_srv_->get_cleaning<bool>("robothome_safetransfer", [this](bool v){
     std_msgs::msg::Bool msg; 
     msg.data = v;
     pub_cleaning_robot_home_st_->publish(msg);
   });
-  opc_srv_->get_cleaning<bool>("cleaning-finished", [this](bool v){
-    std_msgs::msg::Bool msg; 
-    msg.data = v;
-    pub_cleaning_finished_->publish(msg);
-  });
-  opc_srv_->get_cleaning<bool>("cleaning-active", [this](bool v){
-    std_msgs::msg::Bool msg; 
-    msg.data = v;
-    pub_cleaning_active_->publish(msg);
-  });
+
   opc_srv_->get_cleaning<bool>("Car_Pos_Ok",[this](bool v){
     std_msgs::msg::Bool msg;
     msg.data = v;
     pub_cleaning_carbody_located_st_->publish(msg);    
   });
+
+  opc_srv_->get_cleaning<bool>("Cleaning_Pos_1", [this](bool v){
+          std_msgs::msg::Bool msg; 
+          msg.data = v;
+          pub_cleaning_position_1_->publish(msg);
+          });
 
   opc_srv_->get_cleaning<bool>("Cleaning_Pos_2",[this](bool v){
     std_msgs::msg::Bool msg;
@@ -418,7 +396,7 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
     pub_cleaning_position_5_->publish(msg); 
   });
 
-  opc_srv_->get_cleaning<bool>("running", [this](bool v){
+  opc_srv_->get_cleaning<bool>("init_Pos", [this](bool v){
           std_msgs::msg::Bool msg; 
           msg.data = v;
           pub_cleaning_position_1_reached_->publish(msg);
@@ -469,29 +447,57 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
         res->message = std::string("robothome_safetransfer set to ") + (req->data ? "true" : "false");
       });
 
+
+  srv_cleaning_position_2_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/cleaning/position2_bypass_set",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Cleaning_Pos_2_Bypas",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos2 ") + (req->data ? "true" : "false");
+    });
+
+  srv_cleaning_position_3_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/cleaning/position3_bypass_set",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Cleaning_Pos_3_Bypas",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos3 ") + (req->data ? "true" : "false");
+    });
+
+
+  srv_cleaning_position_4_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/cleaning/position4_bypass_set",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Cleaning_Pos_4_Bypas",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos4 ") + (req->data ? "true" : "false");
+    });
+
+
+
+  srv_cleaning_position_5_bypass_set_ = create_service<std_srvs::srv::SetBool>("/ros2_comm/cleaning/position5_bypass_set",
+    [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
+            std_srvs::srv::SetBool::Response::SharedPtr res){
+    opc_srv_->set_sensing<bool>("Cleaning_Pos_5_Bypas",req->data);
+    res->success = true;
+    res->message = std::string("bypass set to pos5 ") + (req->data ? "true" : "false");
+    });
+
+
   srv_cleaning_go_slider_pos1_ = create_service<std_srvs::srv::SetBool>(
     "/ros2_comm/cleaning/go_slider_pos1",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
-        opc_srv_->set_cleaning<bool>("running", req->data);
+        opc_srv_->set_cleaning<bool>("init_Pos", req->data);
         res->success = true;
         res->message = std::string("running set to ") + (req->data ? "true" : "false");
       });
-
-  srv_cleaning_active_set_ = create_service<std_srvs::srv::SetBool>(
-          "/ros2_comm/cleaning/active_set",
-          [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
-              std_srvs::srv::SetBool::Response::SharedPtr res) {
-          opc_srv_->set_cleaning<bool>("cleaning-active", req->data);
-          res->success = true;
-          res->message = std::string("cleaning-active set to ") + (req->data ? "true" : "false");
-          });
 
   srv_cleaning_go_slider_pos2_ = create_service<std_srvs::srv::SetBool>(
           "/ros2_comm/cleaning/go_slider_pos2",
           [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
               std_srvs::srv::SetBool::Response::SharedPtr res) {
-          opc_srv_->set_cleaning<bool>("cleaning-finished", req->data);
+          opc_srv_->set_cleaning<bool>("Cleaning_Pos_1", req->data);
           res->success = true;
           res->message = std::string("go slider pos2 set to ") + (req->data ? "true" : "false");
           });

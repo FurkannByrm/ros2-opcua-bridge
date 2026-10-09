@@ -154,11 +154,8 @@ class Sensing : public rclcpp::Node{
     void sensingServices();
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_sensing_slider_actual_pos_; 
     BoolPub pub_sensing_robot_home_st_;
-    BoolPub pub_sensing_finished_;
-    BoolPub pub_touch_sensing_finished_;
-    BoolPub pub_touch_sensing_active_;
-    BoolPub pub_sensing_slide_command_;
     BoolPub pub_sensing_carbody_located_st_;
+    BoolPub pub_sensing_position_1_;
     BoolPub pub_sensing_position_2_;
     BoolPub pub_sensing_position_3_;
     BoolPub pub_sensing_position_4_; 
@@ -170,13 +167,15 @@ class Sensing : public rclcpp::Node{
     BoolPub pub_sensing_position_4_reached_; 
     BoolPub pub_sensing_position_5_reached_;
 
+
     BoolSrv srv_sensing_robot_home_st_set_;
-    BoolSrv srv_sensing_active_set_;
-    BoolSrv srv_touch_sensing_active_set_;
     BoolSrv srv_slide_sensing_command_set_;
-    BoolSrv srv_sensing_go_slider_pos1_;
-    BoolSrv srv_sensing_go_slider_pos2_;
-    BoolSrv srv_touch_sensing_go_slider_pos2_;
+    BoolSrv srv_sensing_position_2_bypass_set_;
+    BoolSrv srv_sensing_position_3_bypass_set_;
+    BoolSrv srv_sensing_position_4_bypass_set_;
+    BoolSrv srv_sensing_position_5_bypass_set_;
+    BoolSrv srv_sensing_go_slider_pos1_;//go initial pos
+    BoolSrv srv_sensing_go_slider_pos2_;//go pos2
     BoolSrv srv_sensing_go_slider_pos3_;
     BoolSrv srv_sensing_go_slider_pos4_;
     BoolSrv srv_sensing_go_slider_pos5_;
@@ -194,10 +193,8 @@ class Cleaning : public rclcpp::Node{
     void cleaningServices();
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_cleaning_slider_actual_pos_; 
     BoolPub pub_cleaning_robot_home_st_;
-    BoolPub pub_cleaning_finished_;
-    BoolPub pub_cleaning_active_;
-    BoolPub pub_cleaning_slide_command_;
     BoolPub pub_cleaning_carbody_located_st_; 
+    BoolPub pub_cleaning_position_1_;
     BoolPub pub_cleaning_position_2_;
     BoolPub pub_cleaning_position_3_;
     BoolPub pub_cleaning_position_4_;
@@ -208,11 +205,13 @@ class Cleaning : public rclcpp::Node{
     BoolPub pub_cleaning_position_4_reached_;
     BoolPub pub_cleaning_position_5_reached_;
 
-
     BoolSrv srv_cleaning_robot_home_st_set_;
     BoolSrv srv_slide_cleaning_command_set_;
-    BoolSrv srv_cleaning_active_set_; 
-    BoolSrv srv_cleaning_go_slider_pos1_;
+    BoolSrv srv_cleaning_position_2_bypass_set_;
+    BoolSrv srv_cleaning_position_3_bypass_set_;
+    BoolSrv srv_cleaning_position_4_bypass_set_;
+    BoolSrv srv_cleaning_position_5_bypass_set_;
+    BoolSrv srv_cleaning_go_slider_pos1_;//pos1 initial pos
     BoolSrv srv_cleaning_go_slider_pos2_;
     BoolSrv srv_cleaning_go_slider_pos3_;
     BoolSrv srv_cleaning_go_slider_pos4_;
