@@ -268,7 +268,7 @@ void Sensing::sensingServices(){
       });
 
   srv_sensing_slider_pos1_ok_ = create_service<std_srvs::srv::SetBool>(
-          "/ros2_comm/sensing/pos1_ok_",
+          "/ros2_comm/sensing/pos1_ok",
           [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
               std_srvs::srv::SetBool::Response::SharedPtr res) {
           opc_srv_->set_sensing<bool>("Sensing_Pos_1", req->data);
@@ -485,7 +485,7 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
 
 
   srv_cleaning_slider_init_pos_ok_ = create_service<std_srvs::srv::SetBool>(
-    "/ros2_comm/cleaning/intial_pos_ok",
+    "/ros2_comm/cleaning/initial_pos_ok",
     [this](const std_srvs::srv::SetBool::Request::SharedPtr req,
       std_srvs::srv::SetBool::Response::SharedPtr res) {
         opc_srv_->set_cleaning<bool>("init_Pos", req->data);
