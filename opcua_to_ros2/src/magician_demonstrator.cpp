@@ -123,7 +123,8 @@ void Sensing::sensingPublishers(rclcpp::QoS qos){
 
   opc_srv_->get_workcell<double>("Slider_1_actual position-linear", [this](double v){
     std_msgs::msg::Float32 msg;
-    msg.data = static_cast<float>(v);   
+    const double corrected_position = v + HOME_OFFSET_MM;
+    msg.data = static_cast<float>(corrected_position);
     pub_sensing_slider_actual_pos_->publish(msg);
   });
 
@@ -346,10 +347,11 @@ void Cleaning::cleaningPublishers(rclcpp::QoS qos){
 
 
   opc_srv_->get_workcell<double>("Slider_2_actual position-linear",[this](double v){
-          std_msgs::msg::Float32 msg;
-          msg.data = static_cast<float>(v);
-          pub_cleaning_slider_actual_pos_->publish(msg);    
-          });
+    std_msgs::msg::Float32 msg;
+    const double corrected_position = v + HOME_OFFSET_MM;
+    msg.data = static_cast<float>(corrected_position);
+    pub_cleaning_slider_actual_pos_->publish(msg);    
+    });
 
   opc_srv_->get_cleaning<bool>("robothome_safetransfer", [this](bool v){
     std_msgs::msg::Bool msg; 
